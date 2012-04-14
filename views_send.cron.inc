@@ -21,22 +21,24 @@ function views_send_send_from_spool() {
   timer_start('views_send');
 
   // Retrieve messages to be send.
-  $query = "SELECT * FROM {views_send_spool} WHERE status = %d ORDER BY tentatives ASC, timestamp ASC";
-  $result = $limit ? db_query_range($query, 0, 0, $limit) : db_query($query, 0);
-  while ($message = db_fetch_object($result)) {
-
+  $query = "SELECT * FROM {views_send_spool} WHERE status = :status ORDER BY tentatives ASC, timestamp ASC";
+  $result = $limit ? db_query_range($query, 0, $limit, array(':status' => 0)) : db_query($query, array(':status' => 0));
+  foreach ($result as $message) {
     // Send the message.
     $status = views_send_deliver($message);
 
     if ($status) {
       // Update the spool status.
-      db_query("UPDATE {views_send_spool} SET status = %d WHERE eid = %d", 1, $message->eid);
+      db_query("UPDATE {views_send_spool} SET status = :status WHERE eid = :eid", array(':status' => 1, ':eid' => $message->eid));
+      if (variable_get('views_send_debug', FALSE)) {
+        watchdog('views_send', 'Message sent to %mail.', array('%mail' => $message->to_mail));
+      }
       $ok++;
     }
     else {
       // Increment tentatives so that next time this message
       // will be scheduled with low priority.
-      db_query("UPDATE {views_send_spool} SET tentatives = tentatives + 1 WHERE eid = %d", $message->eid);
+      db_query("UPDATE {views_send_spool} SET tentatives = tentatives + 1 WHERE eid = :eid", array(':eid' => $message->eid));
       $fail++;
     }
 
@@ -70,30 +72,28 @@ function views_send_send_from_spool() {
  *   Boolean indicating if the message was sent successfully.
  */
 function views_send_deliver($message) {
+  $key = 'direct';
   $headers = unserialize($message->headers);
   $to = _views_send_format_address($message->to_mail, $message->to_name);
   $from = _views_send_format_address($message->from_mail, $message->from_name);
 
+  $mail = array(
+    'to' => $to,
+    'subject' => $message->subject,
+    'body' => $message->body,
+    'from' => $from,
+    'headers' => $headers,
+  );
+
   if (VIEWS_SEND_MIMEMAIL) {
-    $mail = array(
-      'address' => $to,
-      'subject' => mime_header_encode($message->subject),
-      'body' => $message->body,
-      'sender' => $from,
-      'headers' => $headers,
-    );
-    return mimemail_send_message($mail);
+    $mail['subject'] = mime_header_encode($message->subject);
+    mailsystem_set(array(
+      "views_send_$key" => 'MimeMailSystem'
+    ));
   }
-  else {
-    $mail = array(
-      'to' => $to,
-      'subject' => $message->subject,
-      'body' => $message->body,
-      'from' => $from,
-      'headers' => $headers,
-    );
-    return drupal_mail_send($mail);
-  }
+
+  $system = drupal_mail_system('views_send', $key);
+  return $system->mail($mail);
 }
 
 /**
@@ -102,5 +102,5 @@ function views_send_deliver($message) {
 function views_send_clear_spool() {
   // TODO: Drupal 7: replace time() with REQUEST_TIME.
   $expiration_time = time() - variable_get('views_send_spool_expire', 0) * 86400;
-  db_query("DELETE FROM {views_send_spool} WHERE status = %d AND timestamp <= %d", 1, $expiration_time);
+  db_query("DELETE FROM {views_send_spool} WHERE status = :status AND timestamp <= :expiry", array(':status' => 1, 'expiry' => $expiration_time));
 }

@@ -8,9 +8,7 @@
  */
 
 /**
- * Impementation of hook_schema().
- *
- * @see http://api.drupal.org/api/function/hook_schema/6
+ * Implements hook_schema().
  */
 function views_send_schema() {
   $schema['views_send_spool'] = array(
@@ -85,8 +83,7 @@ function views_send_schema() {
         'description' => 'The E-mail additional headers.',
         'type' => 'text',
         'not null' => TRUE,
-        'size' => 'big',
-        'default' => ''),
+        'size' => 'big',),
     ),
     'indexes' => array(
       'uid' => array('uid'),
@@ -98,21 +95,9 @@ function views_send_schema() {
 }
 
 /**
- * Implementation of hook_install().
- *
- * @see http://api.drupal.org/api/function/hook_install/6
- */
-function views_send_install() {
-  drupal_install_schema('views_send');
-}
-
-/**
- * Implementation of hook_uninstall().
- *
- * @see http://api.drupal.org/api/function/hook_uninstall/6
+ * Implements hook_uninstall().
  */
 function views_send_uninstall() {
-  drupal_uninstall_schema('views_send');
   db_query("DELETE FROM {variable} WHERE name LIKE 'views_send_%'");
   db_query("DELETE FROM {cache} WHERE cid LIKE 'variables%'");
 }

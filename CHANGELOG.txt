@@ -1,6 +1,18 @@
 
-Views Send x.x-x.x, xxxx-xx-xx
+Views Send 7.x-1.x, xxxx-xx-xx
 ------------------------------
+#1477828 by bojanz: Stop relying on VBO, implement a custom Views Form handler instead.
+#1462118 by cbergmann, hansfn: Preview not working.
+#1454740 by hansfn: 'send mass mail' appears in VBO Operations drop-down even if not allowed.
+#1466638 by cbergmann: Always fetch the view from the context.
+#1468120 by cbergmann: views_send_debug has no effect.
+#1462118 by Ben Coleman, hansfn: Trim all email addresses.
+#1455820 by hansfn: Improve handling of formats
+#1451594 by hansfn: Make field support more robust for the recipient's name/e-mail
+#1449988 by hansfn: Fix token replacement for fields.
+#1411976 by julien66, hansfn: Added carbon copy (to sender).
+#1408756 by hansfn: Pass the selected views row(s) to the action.
+#1052040 by hansfn: Port to Drupal 7.
 
 Views Send 6.x-1.x, xxxx-xx-xx
 ------------------------------

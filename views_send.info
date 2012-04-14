@@ -1,7 +1,8 @@
 name = "Views Send E-mail"
-descripion = "Implements a new action to be used with VBO in order to send E-mails to a list created with Views"
-dependencies[] = views_bulk_operations
+descripion = "Provides a way to send e-mails from a list created with Views"
+dependencies[] = views
+configure = admin/config/system/views_send
 package = Views
-core = 6.x
+core = 7.x
 
-
+files[] = views/views_send_handler_field_selector.inc
