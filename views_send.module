@@ -349,25 +349,38 @@ function views_send_config_form_validate($form, &$form_state) {
 
   // Check in the column selected as e-mail contain valid e-mail values.
   if (!empty($values['views_send_to_mail'])) {
-    $wrong_addresses = 0;
+    $wrong_addresses = array();
 
     $to_mail_field = $values["views_send_to_mail"];
     foreach ($form_state['selection'] as $row_id) {
       $email = _views_send_get_from_views_result($view->result[$row_id], $to_mail_field, 'email');
       if (!valid_email_address(trim($email))) {
-        $wrong_addresses++;
+        $wrong_addresses[$row_id] = trim($email);
       }
     }
 
-    if ($wrong_addresses) {
-      form_set_error('views_send_to_mail',
-        t('The field used for recipient\'s e-mail contains @wrong invalid ' .
-          'e-mail addresses from a total of @total selected. Choose another ' .
-          'field to act as recipient\'s e-mail or narrow the selection to ' .
-          'a subset containing only valid addresses.',
-            array('@wrong' => $wrong_addresses, '@total' => count($form_state['selection']))
-        )
-      );
+    if (count($wrong_addresses) > 0) {
+      if (count($wrong_addresses) == count($form_state['selection'])) {
+        $error_message = t('The field used for recipient\'s e-mail contains an invalid ' .
+          'e-mail address in all selected rows. Maybe choose another field to act ' . 
+          'as recipient\'s e-mail?');
+      }
+      else {
+        $error_message = t('The field used for recipient\'s e-mail contains an invalid ' .
+          'e-mail address in @wrong of @total selected rows. Choose another ' .
+          'field to act as recipient\'s e-mail or return to the view and narrow the ' . 
+          'selection to a subset containing only valid addresses. Bad addresses:',
+            array('@wrong' => count($wrong_addresses), '@total' => count($form_state['selection']))
+        );
+        $error_message .= sprintf('<table><tr><th>%s</th><th>%s</th></tr>',
+          t('Row'), t('E-mail address'));
+        foreach ($wrong_addresses as $rowid => $wrong_address) {
+          $error_message .= sprintf('<tr><td>%s</td><td>%s</td></tr>', 
+            $rowid, check_plain($wrong_address));
+        }
+        $error_message .= '</table>';
+      }
+      form_set_error('views_send_to_mail', $error_message);
     }
   }
 }
