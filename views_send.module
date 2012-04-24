@@ -114,6 +114,15 @@ function views_send_form_alter(&$form, &$form_state, $form_id) {
     return;
   }
 
+  // Allow Views Send to work when embedded using views_embed_view(), or in a block.
+  if (empty($field->view->override_path)) {
+    if (!empty($field->view->preview) || $field->view->display_handler instanceof views_plugin_display_block) {
+      $field->view->override_path = $_GET['q'];
+    }
+  }
+  $query = drupal_get_query_parameters($_GET, array('q'));
+  $form['#action'] = url($field->view->get_url(), array('query' => $query));
+
   // Cache the built form to prevent it from being rebuilt prior to validation
   // and submission, which could lead to data being processed incorrectly,
   // because the views rows (and thus, the form elements as well) have changed
