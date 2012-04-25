@@ -1,6 +1,8 @@
 
 Views Send 7.x-1.x, xxxx-xx-xx
 ------------------------------
+#1513822 by hansfn: Rules integration.
+#1462126 by hansfn: Indicate which selected rows contain invalid e-mail addresses.
 #1477828 by bojanz: Stop relying on VBO, implement a custom Views Form handler instead.
 #1462118 by cbergmann, hansfn: Preview not working.
 #1454740 by hansfn: 'send mass mail' appears in VBO Operations drop-down even if not allowed.

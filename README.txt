@@ -24,11 +24,13 @@ DEPENDENCIES & INTEGRATION
 
  * Views Send depends on Views.
  * The module integrates features from:
-  o Mime Mail. When Mime Mail module is enabled, the user can choose to send
+  o Mime Mail. When the Mime Mail module is enabled, the user can choose to send
     rich HTML messages.
-  o Tokens. When Tokens module is enabled, the user can insert context tokens
+  o Tokens. When the Tokens module is enabled, the user can insert context tokens
     into the subject or body of the message. Note that row-based tokens are
     available even if Tokens module is disabled.
+  o Rules. When the Rules module is enabled, the user can define actions 
+    for when emails are sent and/or placed in the spool.
 
 SIMILAR MODULES
 

@@ -5,4 +5,5 @@ configure = admin/config/system/views_send
 package = Views
 core = 7.x
 
+files[] = views_send.rules.inc
 files[] = views/views_send_handler_field_selector.inc

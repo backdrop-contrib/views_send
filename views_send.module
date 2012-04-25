@@ -596,13 +596,18 @@ function views_send_queue_mail($params, $selected_rows) {
       'headers' => serialize($headers),
     );
     db_insert('views_send_spool')->fields($fields)->execute();
-
+    if (module_exists('rules')) {
+      rules_invoke_event('views_send_email_added_to_spool', $fields);
+    }
   }
 
   drupal_set_message(
     t('@total mails added to the spool by Views Send.',
       array('@total' => count($selected_rows)))
   );
+  if (module_exists('rules')) {
+    rules_invoke_event('views_send_all_email_added_to_spool', count($selected_rows));
+  }
 
   // Send a copy (of the last message) to the sender.
   if ($params['views_send_carbon_copy'] == 1) {

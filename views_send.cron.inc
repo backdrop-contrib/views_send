@@ -33,6 +33,9 @@ function views_send_send_from_spool() {
       if (variable_get('views_send_debug', FALSE)) {
         watchdog('views_send', 'Message sent to %mail.', array('%mail' => $message->to_mail));
       }
+      if (module_exists('rules')) {
+        rules_invoke_event('views_send_email_sent', $message);
+      }
       $ok++;
     }
     else {
