@@ -20,11 +20,6 @@ define('VIEWS_SEND_PRIORITY_LOW', 4);
 define('VIEWS_SEND_PRIORITY_LOWEST', 5);
 
 /**
- * Plain message format value.
- */
-define('VIEWS_SEND_FORMAT_PLAIN', 'plain_text');
-
-/**
  * Capture PHP max_execution_time before drupal_cron_run().
  * Workaround for Drupal 6.14. See http://drupal.org/node/584334
  */
@@ -248,15 +243,16 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#required' => TRUE,
     '#default_value' => variable_get('views_send_subject_' . $display, ''),
   );
+  $saved_message = variable_get('views_send_message_' . $display);
   $form['mail']['views_send_message'] = array(
-    '#type' => 'textarea',
+    '#type' => 'text_format',
+    '#format' => isset($saved_message['format']) ? $saved_message['format'] : 'plain_text',
     '#title' => t('Message'),
     '#description' => t('Enter the body of the message. You can use the following token replacements.'),
     '#required' => TRUE,
     '#rows' => 10,
-    '#default_value' => variable_get('views_send_message_' . $display, ''),
+    '#default_value' => isset($saved_message['value']) ? $saved_message['value'] : '',
   );
-  $form['mail']['format'] = _views_send_filter_form(variable_get('views_send_message_format_' . $display, VIEWS_SEND_FORMAT_PLAIN));
   $form['mail']['token'] = array(
     '#type' => 'fieldset',
     '#title' => t('Replacements'),
@@ -338,6 +334,11 @@ function views_send_config_form_validate($form, &$form_state) {
   $values =& $form_state['values'];
   $view = $form_state['build_info']['args'][0];
 
+  $formats = filter_formats();
+  if (!filter_access($formats[$values['views_send_message']['format']])) {
+    form_set_error('views_send_message', t('Illegale format selected'));
+  }
+
   // Check if sender's e-mail is a valid one.
   if (!valid_email_address(trim($values['views_send_from_mail']))) {
     form_set_error('views_send_from_mail',
@@ -395,6 +396,14 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
   // Values entered in the "config" step.
   $configuration = $form_state['configuration'];
 
+  if (!VIEWS_SEND_MIMEMAIL && ($configuration['views_send_message']['format'] != 'plain_text')) {
+    drupal_set_message(t(
+      'Only plain text is supported in the message. Any HTML will be converted to text. ' . 
+      'If you want to format the message with HTML, you\'ll have to install and enable the !mimemail module.',
+        array('!mimemail' => '<a href="http://drupal.org/project/mimemail">Mime Mail</a>'))
+    );
+  }
+
   // From: parts.
   $from_mail = trim($configuration['views_send_from_mail']);
   $from_name = trim($configuration['views_send_from_name']);
@@ -428,7 +437,7 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
   $form['message'] = array(
     '#type' => 'item',
     '#title' => t('Message'),
-    '#markup' => '<div id="views-send-preview-message" class="views-send-preview-value">' . $configuration['views_send_message'] . '</div>',
+    '#markup' => '<div id="views-send-preview-message" class="views-send-preview-value">' . check_markup($configuration['views_send_message']['value'], $configuration['views_send_message']['format']) . '</div>',
   );
 
   $headers = array();
@@ -525,6 +534,8 @@ function views_send_queue_mail($params, $selected_rows) {
     return;
   }
 
+  $formats = filter_formats();
+
   // From: parts.
   $from_mail = trim($params['views_send_from_mail']);
   $from_name = $params['views_send_from_name'];
@@ -535,7 +546,14 @@ function views_send_queue_mail($params, $selected_rows) {
     $to_name = _views_send_get_from_views_result($row, $params['views_send_to_name']);
 
     $subject = $params['views_send_subject'];
-    $body = $params['views_send_message'];
+    $body = $params['views_send_message']['value'];
+    $params['format'] = $params['views_send_message']['format'];
+
+    // This shouldn't happen, but better be 100% sure.
+    if (!filter_access($formats[$params['format']])) {
+      drupal_set_message(t('No mails sent since an illegale format is selected for the message.'));
+      return;
+    }
 
     $body = check_markup($body, $params['format']);
 
@@ -560,15 +578,11 @@ function views_send_queue_mail($params, $selected_rows) {
     $subject = str_replace($token_keys, $token_values, $subject);
     $body = str_replace($token_keys, $token_values, $body);
 
-    if (($params['format'] == 'php_code') && _views_send_allow_php()) {
-      $body = php_eval($body);
-    }
-
     if (!VIEWS_SEND_MIMEMAIL) {
       $body = drupal_html_to_text($body);
     }
 
-    if ($params['format'] == VIEWS_SEND_FORMAT_PLAIN) {
+    if ($params['format'] == 'plain_text') {
       $plain_format = TRUE;
     }
     else {
@@ -579,7 +593,7 @@ function views_send_queue_mail($params, $selected_rows) {
     // merging them to the user defined headers.
     $headers = _views_send_headers($params['views_send_receipt'], $params['views_send_priority'], $from_mail, $params['views_send_headers']);
 
-    // All tokens replacements, PHP processing and formatting were done.
+    // All tokens replacements and formatting were done.
     // We are performing now all usual mail processing, altering and preparing.
     _views_send_prepare_mail($from_name, $from_mail, $to_name, $to_mail, $subject, $body, $headers, $plain_format);
 
@@ -715,80 +729,6 @@ function views_send_mail($key, &$message, $params) {
 }
 
 // === Helper functions ========================================================
-
-/**
- * This is a fork of filter_form() in order to allow adding the "Plain" option.
- *
- * @see http://api.drupal.org/api/function/filter_form/6
- *
- * @param
- *   The ID of the format that is currently selected.
- *
- * @return
- *   Form API array for the form element.
- */
-function _views_send_filter_form($default_value) {
-  $form = array();
-  $parents = array('format');
-
-  // Format wrapper.
-  $form = array(
-    '#type' => 'fieldset',
-    '#title' => t('Message format'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-
-  $plain_filter_tips = array();
-  if (VIEWS_SEND_MIMEMAIL) {
-    $plain_filter_tips[] = t('Message will be sent in plain text format.');
-  }
-  else {
-    $plain_filter_tips[] = t('Only plain text format is available. If you want to format the message as HTML, you\'ll have to install and enable the !mimemail module.',
-      array('!mimemail' => '<a href="http://drupal.org/project/mimemail">Mime Mail</a>'));
-  }
-  $plain_filter_tips = theme('item_list', array('items' => $plain_filter_tips));
-
-  $form[VIEWS_SEND_FORMAT_PLAIN] = array(
-    '#type' => 'radio',
-    '#title' => t('Plain text'),
-    '#default_value' => VIEWS_SEND_MIMEMAIL ? $default_value : VIEWS_SEND_FORMAT_PLAIN,
-    '#return_value' => VIEWS_SEND_FORMAT_PLAIN,
-    '#parents' => $parents,
-    '#description' => $plain_filter_tips,
-    '#id' => drupal_html_id('edit-' . implode('-', array_merge($parents, array(VIEWS_SEND_FORMAT_PLAIN)))),
-  );
-
-  $formats = filter_formats();
-  $extra = theme('filter_tips_more_info');
-
-  // Multiple formats available: display radio buttons with tips.
-  foreach ($formats as $fid => $format) {
-    // Skip plain text format since we have added it manually and
-    // skipping formats that the current user don't have access to.
-    if (($fid == VIEWS_SEND_FORMAT_PLAIN) || !filter_access($format)) {
-      continue;
-    }
-    // If Mime Mail module is not present, we don't allow HTML formats.
-    if (!VIEWS_SEND_MIMEMAIL && (strpos($fid, 'html') !== FALSE)) {
-      continue;
-    }
-    // Generate the parents as the autogenerator does, so we will have a
-    // unique id for each radio button.
-    $parents_for_id = array_merge($parents, array($format->format));
-    $form[$format->format] = array(
-      '#type' => 'radio',
-      '#title' => $format->name,
-      '#default_value' => $default_value,
-      '#return_value' => $format->format,
-      '#parents' => $parents,
-      '#description' => theme('filter_tips', array('tips' => _filter_tips($format->format, FALSE))),
-      '#id' => drupal_html_id('edit-' . implode('-', $parents_for_id)),
-    );
-  }
-  $form[] = array('#value' => $extra);
-  return $form;
-}
 
 /**
  * Build header array with priority and receipt confirmation settings.
@@ -932,23 +872,6 @@ function _views_send_prepare_mail($from_name, $from_mail, $to_name, $to_mail, &$
   $subject = $mail['subject'];
   $body = $mail['body'];
   $headers = $mail['headers'];
-}
-
-/**
- * Find out if the current user is allowed to use the PHP filter.
- */
-function _views_send_allow_php() {
-  static $allow_php;
-  if (!isset($allow_php)) {
-    $allow_php = FALSE;
-    if (module_exists('php')) {
-      $format = filter_format_load('php_code');
-      if ($format && filter_access($format)) {
-        $allow_php = TRUE;
-      }
-    }
-  }
-  return $allow_php;
 }
 
 /**
