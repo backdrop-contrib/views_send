@@ -459,7 +459,7 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
   );
   $form['actions']['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Next'),
+    '#value' => t('Send'),
     '#submit' => array('views_send_form_submit'),
     '#suffix' => l(t('Cancel'), $view->get_url(), array('query' => $query)),
   );
