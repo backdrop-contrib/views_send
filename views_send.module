@@ -26,9 +26,11 @@ define('VIEWS_SEND_PRIORITY_LOWEST', 5);
 define('VIEWS_SEND_MAX_EXECUTION_TIME', ini_get('max_execution_time'));
 
 /**
- * Token rows pattern.
+ * Token pattern.
  */
-define('VIEWS_SEND_TOKEN_PATTERN', '[views-send-%s]');
+define('VIEWS_SEND_TOKEN_PATTERN', 'views-send:%s');
+define('VIEWS_SEND_TOKEN_PREFIX', '[');
+define('VIEWS_SEND_TOKEN_POSTFIX', ']');
 
 /**
  * Detect and store Mime Mail module presence.
@@ -178,29 +180,9 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#maxlen' => 255,
   );
 
-  $fields = array();
-  foreach ($view->field as $field_name => $field) {
-    // Ignore Views Form fields.
-    if (property_exists($field, 'views_form_callback') || method_exists($field, 'views_form')) {
-      continue;
-    }
-    if (!empty($field->field_info)) {
-      $field_key = $field->field_info['field_name'];
-    }
-    elseif (property_exists($field, 'field_alias')) {
-      $field_key = $field->field_alias;
-      if ($field_key == 'unknown') {
-        $field_key = $field_name;
-      }
-    }
-    else {
-      $field_key = $field_name;
-    }
-    $field_text = $field->label() . ' (' . $field_name . ')';
-    $fields[$field_key] = $field_text;
-    $tokens[$field_key] = $field_name;
-    $fields_name_text[$field_name] = $field_text;
-  }
+  $fields = _views_send_get_fields_and_tokens($view, 'fields');
+  $tokens = _views_send_get_fields_and_tokens($view, 'tokens');
+  $fields_name_text = _views_send_get_fields_and_tokens($view, 'fields_name_text');
   $fields_options = array_merge(array('' => '<' . t('select') . '>'), $fields);
 
   $form['views_send_tokens'] = array(
@@ -565,7 +547,7 @@ function views_send_queue_mail($params, $selected_rows) {
     // Populate row/context tokens.
     $token_keys = $token_values = array();
     foreach ($params['views_send_tokens'] as $field_key => $field_name) {
-      $token_keys[] = sprintf(VIEWS_SEND_TOKEN_PATTERN, $field_name);
+      $token_keys[] = VIEWS_SEND_TOKEN_PREFIX .  sprintf(VIEWS_SEND_TOKEN_PATTERN, $field_name) . VIEWS_SEND_TOKEN_POSTFIX;
       if (substr($field_key, 0, 6) == 'field_') {
         $value = $row->{'field_' . $field_key};
         $token_values[] = drupal_render($value[0]['rendered']);
@@ -926,14 +908,91 @@ function _views_send_get_from_views_result($views_result, $field, $key=FALSE) {
  * @todo: Add help for other tokens
  */
 function theme_views_send_token_help($fields) {
-  $headers = array(t('Token'), t('Replacement value'));
-  $rows = array();
+  if (!module_exists('token')) {
+    $headers = array(t('Token'), t('Replacement value'));
+    $rows = array();
+    $rows[] = array(array('data' => t('View row tokens'), 'class' => 'region', 'colspan' => 2));
+    foreach ($fields as $field => $title) {
+      $rows[] = array(VIEWS_SEND_TOKEN_PREFIX .  sprintf(VIEWS_SEND_TOKEN_PATTERN, $field) . VIEWS_SEND_TOKEN_POSTFIX, $title);
+    }
+    $output = theme('table', array('headers' => $headers, 'rows' => $rows));
+  }
+  else {
+    $output = theme('token_tree', array('token_types' => 'all'));
+  }
+  return $output;
+}
 
-  $rows[] = array(array('data' => t('View row tokens'), 'class' => 'region', 'colspan' => 2));
-  foreach ($fields as $field => $title) {
-    $rows[] = array(sprintf(VIEWS_SEND_TOKEN_PATTERN, $field), $title);
+if (module_exists('token')) {
+  /**
+   * Implements hook_token_info().
+   */
+  function views_send_token_info() {
+    $fields_name_text = _views_send_get_fields_and_tokens(NULL, 'fields_name_text');
+    // Abort if the list of fields isn't available - not in the config form.
+    if (!$fields_name_text) {
+      return;
+    }
+    $data = array();
+    foreach ($fields_name_text as $field => $title) {
+      $data[$field] = array(
+        'name' => $title, 
+        'description' => ''
+      );
+    }
+    $type = array(
+      'name' => t('Views Send'), 
+      'description' => t('Tokens for Views Send.'), 
+      'needs-data' => 'views-send',
+    );
+    return array(
+      'types' => array('views-send' => $type), 
+      'tokens' => array('views-send' => $data),
+    );
+  }
+}
+
+/**
+ * Generates and returns fields and tokens.
+ */
+function _views_send_get_fields_and_tokens($view, $type) {
+  static $return;
+  if (isset($return[$type])) {
+    return $return[$type];
+  }
+  if (!in_array($type, array('fields', 'tokens', 'fields_name_text')) || !$view) {
+    return FALSE;
+  }
+  $fields = array();
+  $tokens = array();
+  $fields_name_text = array();
+  foreach ($view->field as $field_name => $field) {
+    // Ignore Views Form fields.
+    if (property_exists($field, 'views_form_callback') || method_exists($field, 'views_form')) {
+      continue;
+    }
+    if (!empty($field->field_info)) {
+      $field_key = $field->field_info['field_name'];
+    }
+    elseif (property_exists($field, 'field_alias')) {
+      $field_key = $field->field_alias;
+      if ($field_key == 'unknown') {
+        $field_key = $field_name;
+      }
+    }
+    else {
+      $field_key = $field_name;
+    }
+    $field_text = $field->label() . ' (' . $field_name . ')';
+    $fields[$field_key] = $field_text;
+    $tokens[$field_key] = $field_name;
+    $fields_name_text[$field_name] = $field_text;
   }
 
-  $output = theme('table', array('headers' => $headers, 'rows' => $rows));
-  return $output;
+  $return = array();
+  $return['fields'] = $fields;
+  $return['tokens'] = $tokens;
+  $return['fields_name_text'] = $fields_name_text;
+
+  return $return;
 }
