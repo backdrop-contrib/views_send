@@ -344,16 +344,11 @@ function views_send_config_form_validate($form, &$form_state) {
 
     if (count($wrong_addresses) > 0) {
       if (count($wrong_addresses) == count($form_state['selection'])) {
-        $error_message = t('The field used for recipient\'s e-mail contains an invalid ' .
-          'e-mail address in all selected rows. Maybe choose another field to act ' . 
-          'as recipient\'s e-mail?');
+        $error_message = t("The field used for recipient's e-mail contains an invalid e-mail address in all selected rows. Maybe choose another field to act as recipient's e-mail?");
       }
       else {
-        $error_message = t('The field used for recipient\'s e-mail contains an invalid ' .
-          'e-mail address in @wrong of @total selected rows. Choose another ' .
-          'field to act as recipient\'s e-mail or return to the view and narrow the ' . 
-          'selection to a subset containing only valid addresses. Bad addresses:',
-            array('@wrong' => count($wrong_addresses), '@total' => count($form_state['selection']))
+        $error_message = t("The field used for recipient's e-mail contains an invalid e-mail address in @wrong of @total selected rows. Choose another field to act as recipient's e-mail or return to the view and narrow the selection to a subset containing only valid addresses. Bad addresses:",
+          array('@wrong' => count($wrong_addresses), '@total' => count($form_state['selection']))
         );
         $error_message .= sprintf('<table><tr><th>%s</th><th>%s</th></tr>',
           t('Row'), t('E-mail address'));
@@ -379,10 +374,8 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
   $configuration = $form_state['configuration'];
 
   if (!VIEWS_SEND_MIMEMAIL && ($configuration['views_send_message']['format'] != 'plain_text')) {
-    drupal_set_message(t(
-      'Only plain text is supported in the message. Any HTML will be converted to text. ' . 
-      'If you want to format the message with HTML, you\'ll have to install and enable the !mimemail module.',
-        array('!mimemail' => '<a href="http://drupal.org/project/mimemail">Mime Mail</a>'))
+    drupal_set_message(t("Only plain text is supported in the message. Any HTML will be converted to text. If you want to format the message with HTML, you'll have to install and enable the !mimemail module.",
+      array('!mimemail' => '<a href="http://drupal.org/project/mimemail">Mime Mail</a>'))
     );
   }
 
