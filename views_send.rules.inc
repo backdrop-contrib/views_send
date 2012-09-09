@@ -13,13 +13,13 @@ function views_send_rules_event_info() {
       'variables' => array(
         'views_send_email_message' => array(
           'type' => 'views_send_email_message',
-          'label' => t('email message'),
+          'label' => t('e-mail message'),
           'description' => t('All information about the message.')
         ),
       ),
     ),
     'views_send_all_email_added_to_spool' => $defaults + array(
-      'label' => t('After adding all emails to the spool'),
+      'label' => t('After adding all e-mails to the spool'),
       'variables' => array(
         'views_send_email_count' => array(
           'type' => 'integer',
@@ -29,11 +29,11 @@ function views_send_rules_event_info() {
       ),
     ),
     'views_send_email_added_to_spool' => $defaults + array(
-      'label' => t('After adding an individual email to the spool'),
+      'label' => t('After adding an individual e-mail to the spool'),
       'variables' => array(
         'views_send_email_message' => array(
           'type' => 'views_send_email_message',
-          'label' => t('email message'),
+          'label' => t('e-mail message'),
           'description' => t('All information about the message.')
         ),
       ),
@@ -46,7 +46,7 @@ function views_send_rules_event_info() {
 */
 function views_send_rules_data_info() {
   $types['views_send_email_message'] = array(
-    'label' => t('Views Send email message'), 
+    'label' => t('Views Send e-mail message'), 
     'group' => t('Views Send'), 
     'wrap' => TRUE, 
     'property info' => array(

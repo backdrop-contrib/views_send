@@ -263,14 +263,14 @@ function views_send_config_form($form, &$form_state, $view, $output) {
       VIEWS_SEND_PRIORITY_LOW => t('low'),
       VIEWS_SEND_PRIORITY_LOWEST => t('lowest')
     ),
-    '#description' => t('Note that email priority is ignored by a lot of email programs.'),
+    '#description' => t('Note that e-mail priority is ignored by a lot of e-mail programs.'),
     '#default_value' => variable_get('views_send_priority_' . $display, 0),
   );
   $form['additional']['views_send_receipt'] = array(
     '#type' => 'checkbox',
     '#title' => t('Request receipt'),
     '#default_value' => variable_get('views_send_receipt_' . $display, 0),
-    '#description' => t('Request a Read Receipt from your e-mails. A lot of email programs ignore these so it is not a definitive indication of how many people have read your message.'),
+    '#description' => t('Request a Read Receipt from your e-mails. A lot of e-mail programs ignore these so it is not a definitive indication of how many people have read your message.'),
   );
   $form['additional']['views_send_headers'] = array(
     '#type' => 'textarea',
