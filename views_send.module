@@ -245,6 +245,17 @@ function views_send_config_form($form, &$form_state, $view, $output) {
   $form['mail']['token']['tokens'] = array(
     '#markup' => theme('views_send_token_help', $fields_name_text),
   );
+  if (VIEWS_SEND_MIMEMAIL && user_access('attachments with views_send')) {
+    // set the form encoding type
+    $form['#attributes']['enctype'] = "multipart/form-data";
+
+    // add a file upload file
+    $form['mail']['views_send_attachments'] = array(
+      '#type' => 'file',
+      '#title' => t('Attachment'),
+      '#description' => t('NB! The attached file is stored once per recipient in the database (before sending it).'),
+    );
+  }
 
   $form['additional'] = array(
     '#type' => 'fieldset',
@@ -353,7 +364,7 @@ function views_send_config_form_validate($form, &$form_state) {
         $error_message .= sprintf('<table><tr><th>%s</th><th>%s</th></tr>',
           t('Row'), t('E-mail address'));
         foreach ($wrong_addresses as $rowid => $wrong_address) {
-          $error_message .= sprintf('<tr><td>%s</td><td>%s</td></tr>', 
+          $error_message .= sprintf('<tr><td>%s</td><td>%s</td></tr>',
             $rowid, check_plain($wrong_address));
         }
         $error_message .= '</table>';
@@ -425,6 +436,16 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
     '#title' => t('Headers'),
     '#markup' => '<div id="views-send-preview-headers" class="views-send-preview-value">' . implode('<br />', $headers) . '</div>',
   );
+  if (VIEWS_SEND_MIMEMAIL && !empty($configuration['views_send_attachments']) && user_access('attachments with views_send')) {
+    foreach ($configuration['views_send_attachments'] as $attachment) {
+      $attachments[] = $attachment['filename'];
+    }
+    $form['attachments'] = array(
+      '#type' => 'item',
+      '#title' => t('Attachments'),
+      '#markup' => '<div id="views-send-preview-attachments" class="views-send-preview-value">'. implode('<br />', $attachments) .'</div>',
+    );
+  }
 
   $query = drupal_get_query_parameters($_GET, array('q'));
   $form['actions'] = array(
@@ -472,6 +493,23 @@ function views_send_form_submit($form, &$form_state) {
         }
       }
       $form_state['configuration'] = $form_state['values'];
+
+      // If a file was uploaded, process it.
+      if (VIEWS_SEND_MIMEMAIL && user_access('attachments with views_send') && isset($_FILES['files']) && is_uploaded_file($_FILES['files']['tmp_name']['views_send_attachments'])) {
+        // attempt to save the uploaded file
+        $dir = file_default_scheme() . '://views_send_attachments';
+        file_prepare_directory($dir, FILE_CREATE_DIRECTORY);
+        $file = file_save_upload('views_send_attachments', array(), $dir);
+        // set error if file was not uploaded
+        if (!$file) {
+          //form_set_error('views_send_attachment', 'Error uploading file.');
+        }
+        else {
+          // set files to form_state, to process when form is submitted
+          // @todo: when we add a multifile formfield then loop through to add each file to attachments array
+          $form_state['configuration']['views_send_attachments'][] = (array)$file;
+        }
+      }
 
       $form_state['step'] = 'views_send_confirm_form';
       $form_state['rebuild'] = TRUE;
@@ -573,9 +611,11 @@ function views_send_queue_mail($params, $selected_rows) {
     // merging them to the user defined headers.
     $headers = _views_send_headers($params['views_send_receipt'], $params['views_send_priority'], $from_mail, $params['views_send_headers']);
 
+    $attachments = $params['views_send_attachments'] ?  $params['views_send_attachments'] : array();
+
     // All tokens replacements and formatting were done.
     // We are performing now all usual mail processing, altering and preparing.
-    _views_send_prepare_mail($from_name, $from_mail, $to_name, $to_mail, $subject, $body, $headers, $plain_format);
+    _views_send_prepare_mail($from_name, $from_mail, $to_name, $to_mail, $subject, $body, $headers, $plain_format, $attachments);
 
     // Queue the message to the spool table.
     $fields = array(
@@ -634,16 +674,23 @@ function views_send_menu() {
  * Implements hook_permission().
  */
 function views_send_permission() {
-  return array(
+  $perms = array(
     'administer views_send' => array(
       'title' => t('Administer mass mail with Views'),
       'description' => t('Configure sending of e-mails to a list created with Views.'),
     ),
     'mass mailing with views_send' => array(
       'title' => t('Send mass mail with Views'),
-      'description' => t('Use VBO in order to send e-mails to a list created with Views.'),
+      'description' => t('Send e-mails to a list created with Views.'),
     ),
   );
+  if (VIEWS_SEND_MIMEMAIL) {
+    $perms['attachments with views_send'] = array(
+      'title' => t('Use attachments with Views Send'),
+      'description' => t('Attach files to e-mails sent with Views Send.'),
+    );
+  }
+  return $perms; 
 }
 
 /**
@@ -808,7 +855,7 @@ function _views_send_format_address($mail, $name, $encode = TRUE) {
  * @param $plain_format
  *   Whether the e-mail should be sent in plain format.
  */
-function _views_send_prepare_mail($from_name, $from_mail, $to_name, $to_mail, &$subject, &$body, &$headers, $plain_format=TRUE) {
+function _views_send_prepare_mail($from_name, $from_mail, $to_name, $to_mail, &$subject, &$body, &$headers, $plain_format=TRUE, $attachments=array()) {
   /**
    * TODO: In the future, this module will be able to send an existing node.
    * $key will have to make the difference. A value when we pickup a node, other
@@ -835,6 +882,7 @@ function _views_send_prepare_mail($from_name, $from_mail, $to_name, $to_mail, &$
     mailsystem_set(array(
       "views_send_$key" => 'MimeMailSystem'
     ));
+    $params['attachments'] = $attachments;
     if ($plain_format) {
       $params['plain'] = TRUE;
     }
@@ -929,17 +977,17 @@ if (module_exists('token')) {
     $data = array();
     foreach ($fields_name_text as $field => $title) {
       $data[$field] = array(
-        'name' => $title, 
+        'name' => $title,
         'description' => ''
       );
     }
     $type = array(
-      'name' => t('Views Send'), 
-      'description' => t('Tokens for Views Send.'), 
+      'name' => t('Views Send'),
+      'description' => t('Tokens for Views Send.'),
       'needs-data' => 'views-send',
     );
     return array(
-      'types' => array('views-send' => $type), 
+      'types' => array('views-send' => $type),
       'tokens' => array('views-send' => $data),
     );
   }
