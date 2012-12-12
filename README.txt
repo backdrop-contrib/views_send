@@ -49,6 +49,8 @@ HOW CAN YOU GET INVOLVED?
 
 MAINTAINERS & SPONSORS
 
- * Module author & maintainer
+ * Module maintainer
+   Hans Fredrik Nordhaug (hansfn) | http://drupal.org/user/40521
+ * Module author of original Drupal 6 version
    Claudiu Cristea (claudiu.cristea) | http://drupal.org/user/56348
- * This module is sponsored by Grafit SRL | http://www.grafitsolutions.ro
+ * The Drupal 6 version of this module was sponsored by Grafit SRL | http://www.grafitsolutions.ro
