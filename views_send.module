@@ -690,7 +690,7 @@ function views_send_permission() {
       'description' => t('Attach files to e-mails sent with Views Send.'),
     );
   }
-  return $perms; 
+  return $perms;
 }
 
 /**
@@ -969,27 +969,58 @@ if (module_exists('token')) {
    * Implements hook_token_info().
    */
   function views_send_token_info() {
-    $fields_name_text = _views_send_get_fields_and_tokens(NULL, 'fields_name_text');
-    // Abort if the list of fields isn't available - not in the config form.
-    if (!$fields_name_text) {
-      return;
-    }
     $data = array();
-    foreach ($fields_name_text as $field => $title) {
-      $data[$field] = array(
-        'name' => $title,
-        'description' => ''
+    $fields_name_text = _views_send_get_fields_and_tokens(NULL, 'fields_name_text');
+    if ($fields_name_text) {
+      // We are in the Views form config
+      foreach ($fields_name_text as $field => $title) {
+        $data[$field] = array(
+          'name' => $title,
+          'description' => ''
+        );
+      }
+      $type = array(
+        'name' => t('Views Send'),
+        'description' => t('Tokens for Views Send.'),
+        'needs-data' => 'views-send',
+      );
+      return array(
+        'types' => array('views-send' => $type),
+        'tokens' => array('views-send' => $data),
       );
     }
-    $type = array(
-      'name' => t('Views Send'),
-      'description' => t('Tokens for Views Send.'),
-      'needs-data' => 'views-send',
-    );
-    return array(
-      'types' => array('views-send' => $type),
-      'tokens' => array('views-send' => $data),
-    );
+    else {
+      foreach (_views_send_email_message_property_info() as $key => $info) {
+        $data[$key] = array(
+          'name' => $info['label'],
+          'description' => ''
+        );
+      }
+      $type = array(
+        'name' => t('Views Send e-mail message'),
+        'description' => t('Tokens for Views Send e-mail message.'),
+        'needs-data' => 'views_send_email_message',
+      );
+      return array(
+        'types' => array('views_send_email_message' => $type),
+        'tokens' => array('views_send_email_message' => $data),
+      );
+    }
+  }
+
+  /**
+   * Implementation hook_tokens().
+   *
+   * These token replacements are used by Rules and not in the Views form.
+   */
+  function views_send_tokens($type, $tokens, array $data = array(), array $options = array()) {
+    $replacements = array();
+    if ($type == 'views_send_email_message' && !empty($data['views_send_email_message'])) {
+      foreach ($tokens as $name => $original) {
+        $replacements[$original] = $data['views_send_email_message']->{$name};
+      }
+    }
+    return $replacements;
   }
 }
 
@@ -1036,4 +1067,51 @@ function _views_send_get_fields_and_tokens($view, $type) {
   $return['fields_name_text'] = $fields_name_text;
 
   return $return;
+}  
+
+/**
+ * Returns property info for Views Send Email Message
+ */
+function _views_send_email_message_property_info() {
+  $propertyinfo = array(
+    'uid' => array(
+      'type' => 'integer', 
+      'label' => t('User ID'),
+    ), 
+    'timestamp' => array(
+      'type' => 'integer', 
+      'label' => t('Timestamp'),
+    ), 
+    'from_name' => array(
+      'type' => 'text', 
+      'label' => t('Sender\'s name'), 
+    ),
+    'from_mail' => array(
+      'type' => 'text', 
+      'label' => t('Sender\'s e-mail'), 
+    ),
+    'to_name' => array(
+      'type' => 'text', 
+      'label' => t('Recipient\'s name'), 
+    ),
+    'to_mail' => array(
+      'type' => 'text', 
+      'label' => t('Recipient\'s e-mail'), 
+    ),
+    'subject' => array(
+      'type' => 'text', 
+      'label' => t('E-mail subject'), 
+    ),
+    'body' => array(
+      'type' => 'text', 
+      'label' => t('E-mail body'), 
+    ),
+    'headers' => array(
+      'type' => 'text', 
+      'label' => t('E-mail headers (serialized)'), 
+    ),
+  );
+  return $propertyinfo;
 }
+
+
