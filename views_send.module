@@ -986,7 +986,7 @@ function views_send_batch_deliver($message, $plain_format, $attachments, &$conte
     }
   }
   else {
-    $context['results'][] = t('Failed sending message to %mail - spooling it.', 
+    $context['results'][] = t('Failed sending message to %mail - spooling it.',
       array('%mail' => $message['to_mail']));
     // Queue the message to the spool table.
     db_insert('views_send_spool')->fields($message)->execute();
@@ -1171,8 +1171,8 @@ function _views_send_get_fields_and_tokens($view, $type) {
   $return['tokens'] = $tokens;
   $return['fields_name_text'] = $fields_name_text;
 
-  return $return;
-}  
+  return $return[$type];
+}
 
 /**
  * Returns property info for Views Send Email Message
@@ -1180,40 +1180,40 @@ function _views_send_get_fields_and_tokens($view, $type) {
 function _views_send_email_message_property_info() {
   $propertyinfo = array(
     'uid' => array(
-      'type' => 'integer', 
+      'type' => 'integer',
       'label' => t('User ID'),
-    ), 
+    ),
     'timestamp' => array(
-      'type' => 'integer', 
+      'type' => 'integer',
       'label' => t('Timestamp'),
-    ), 
+    ),
     'from_name' => array(
-      'type' => 'text', 
-      'label' => t('Sender\'s name'), 
+      'type' => 'text',
+      'label' => t('Sender\'s name'),
     ),
     'from_mail' => array(
-      'type' => 'text', 
-      'label' => t('Sender\'s e-mail'), 
+      'type' => 'text',
+      'label' => t('Sender\'s e-mail'),
     ),
     'to_name' => array(
-      'type' => 'text', 
-      'label' => t('Recipient\'s name'), 
+      'type' => 'text',
+      'label' => t('Recipient\'s name'),
     ),
     'to_mail' => array(
-      'type' => 'text', 
-      'label' => t('Recipient\'s e-mail'), 
+      'type' => 'text',
+      'label' => t('Recipient\'s e-mail'),
     ),
     'subject' => array(
-      'type' => 'text', 
-      'label' => t('E-mail subject'), 
+      'type' => 'text',
+      'label' => t('E-mail subject'),
     ),
     'body' => array(
-      'type' => 'text', 
-      'label' => t('E-mail body'), 
+      'type' => 'text',
+      'label' => t('E-mail body'),
     ),
     'headers' => array(
-      'type' => 'text', 
-      'label' => t('E-mail headers (serialized)'), 
+      'type' => 'text',
+      'label' => t('E-mail headers (serialized)'),
     ),
   );
   return $propertyinfo;
