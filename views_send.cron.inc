@@ -68,40 +68,6 @@ function views_send_send_from_spool() {
 }
 
 /**
- * Sending the message take from spool.
- *
- * @param $message
- *   Database object containing the spooled message being send.
- *
- * @return
- *   Boolean indicating if the message was sent successfully.
- */
-function views_send_deliver($message) {
-  $key = 'direct';
-  $headers = unserialize($message->headers);
-  $to = _views_send_format_address($message->to_mail, $message->to_name);
-  $from = _views_send_format_address($message->from_mail, $message->from_name);
-
-  $mail = array(
-    'to' => $to,
-    'subject' => $message->subject,
-    'body' => $message->body,
-    'from' => $from,
-    'headers' => $headers,
-  );
-
-  if (VIEWS_SEND_MIMEMAIL) {
-    $mail['subject'] = mime_header_encode($message->subject);
-    mailsystem_set(array(
-      "views_send_$key" => 'MimeMailSystem'
-    ));
-  }
-
-  $system = drupal_mail_system('views_send', $key);
-  return $system->mail($mail);
-}
-
-/**
  * Clear the expired items from spool.
  */
 function views_send_clear_spool() {

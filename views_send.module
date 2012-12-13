@@ -213,7 +213,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
   );
   $form['mail'] = array(
     '#type' => 'fieldset',
-    '#title' => t('e-mail content'),
+    '#title' => t('E-mail content'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );
@@ -253,7 +253,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     $form['mail']['views_send_attachments'] = array(
       '#type' => 'file',
       '#title' => t('Attachment'),
-      '#description' => t('NB! The attached file is stored once per recipient in the database (before sending it).'),
+      '#description' => t('NB! The attached file is stored once per recipient in the database if you aren\'t sending the message directly.'),
     );
   }
 
@@ -291,6 +291,11 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#default_value' => variable_get('views_send_headers_' . $display, ''),
   );
 
+  $form['views_send_direct'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Send the message directly using the Batch API.'),
+    '#default_value' => variable_get('views_send_direct_'. $display, TRUE),
+  );
   $form['views_send_carbon_copy'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send a copy of the message to the sender.'),
@@ -302,7 +307,6 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#title' => t('Remember these values for the next time a mass mail is sent. (The values are not stored per user.)'),
     '#default_value' => variable_get('views_send_remember_' . $display, FALSE),
   );
-
   $query = drupal_get_query_parameters($_GET, array('q'));
   $form['actions'] = array(
     '#type' => 'container',
@@ -613,12 +617,7 @@ function views_send_queue_mail($params, $selected_rows) {
 
     $attachments = $params['views_send_attachments'] ?  $params['views_send_attachments'] : array();
 
-    // All tokens replacements and formatting were done.
-    // We are performing now all usual mail processing, altering and preparing.
-    _views_send_prepare_mail($from_name, $from_mail, $to_name, $to_mail, $subject, $body, $headers, $plain_format, $attachments);
-
-    // Queue the message to the spool table.
-    $fields = array(
+    $message = array(
       'uid' => $user->uid,
       'timestamp' => time(),
       'from_name' => $from_name,
@@ -627,28 +626,54 @@ function views_send_queue_mail($params, $selected_rows) {
       'to_mail' => $to_mail,
       'subject' => $subject,
       'body' => $body,
-      'headers' => serialize($headers),
+      'headers' => $headers,
     );
-    db_insert('views_send_spool')->fields($fields)->execute();
-    if (module_exists('rules')) {
-      rules_invoke_event('views_send_email_added_to_spool', $fields);
+
+    if ($params['views_send_direct']) {
+      $operations[] = array('views_send_batch_deliver', array($message, $plain_format, $attachments));
+    }
+    else {
+      _views_send_prepare_mail($message, $plain_format, $attachments);
+      // Queue the message to the spool table.
+      db_insert('views_send_spool')->fields($message)->execute();
+      if (module_exists('rules')) {
+        rules_invoke_event('views_send_email_added_to_spool', $message);
+      }
     }
   }
 
-  drupal_set_message(
-    t('@total mails added to the spool by Views Send.',
-      array('@total' => count($selected_rows)))
-  );
-  if (module_exists('rules')) {
-    rules_invoke_event('views_send_all_email_added_to_spool', count($selected_rows));
+  if ($params['views_send_direct']) {
+    if ($params['views_send_carbon_copy']) {
+      $message['to_name'] = $from_name;
+      $message['to_mail'] = $from_mail;
+      $operations[] = array('views_send_batch_deliver', array($message, $plain_format, $attachments));
+    }
+
+    $batch = array(
+      'operations' => $operations,
+      'finished' => 'views_send_batch_deliver_finished',
+      'progress_message' => t('Sent @current of @total messages.'),
+    );
+    batch_set($batch);
+    drupal_set_message(
+      t('@total messages processed.', array('@total' => count($selected_rows)))
+    );
+  }
+  else {
+    if ($params['views_send_carbon_copy']) {
+      $message['to_name'] = $from_name;
+      $message['to_mail'] = $from_mail;
+      db_insert('views_send_spool')->fields($message)->execute();
+    }
+
+    drupal_set_message(
+      t('@total messages added to the spool.', array('@total' => count($selected_rows)))
+    );
+    if (module_exists('rules')) {
+      rules_invoke_event('views_send_all_email_added_to_spool', count($selected_rows));
+    }
   }
 
-  // Send a copy (of the last message) to the sender.
-  if ($params['views_send_carbon_copy'] == 1) {
-    $fields['to_name'] = $from_name;
-    $fields['to_mail'] = $from_mail;
-    db_insert('views_send_spool')->fields($fields)->execute();
-  }
 }
 
 // === Hook implementations ====================================================
@@ -836,26 +861,33 @@ function _views_send_format_address($mail, $name, $encode = TRUE) {
 }
 
 /**
- * Perform all alteration and preparation before spooling.
+ * Prepare the mail message before sending or spooling.
  *
- * @param $from_name
- *   String holding the Sender's name.
- * @param $from_mail
- *   String holding the Sender's e-mail.
- * @param $to_name
- *   String holding the Recipient's name.
- * @param $to_mail
- *   String holding the Recipient's e-mail.
- * @param $subject
- *   String with the e-mail subject. This argument can be altered here.
- * @param $body
- *   Text with the e-mail body. This argument can be altered here.
- * @param $headers
- *   Associative array with e-mail headers. This argument can be altered here.
- * @param $plain_format
+ * @param array $message
+ *   which contains the following keys:
+ *   from_name
+ *     String holding the Sender's name.
+ *   from_mail
+ *     String holding the Sender's e-mail.
+ *   to_name
+ *     String holding the Recipient's name.
+ *   to_mail
+ *     String holding the Recipient's e-mail.
+ *   subject
+ *     String with the e-mail subject. This argument can be altered here.
+ *   body
+ *     Text with the e-mail body. This argument can be altered here.
+ *   headers
+ *     Associative array with e-mail headers. This argument can be altered here.
+ * @param boolean $plain_format
  *   Whether the e-mail should be sent in plain format.
+ * @param array $attachments
+ *   An array with file information objects (as returned by file_save_upload).
  */
-function _views_send_prepare_mail($from_name, $from_mail, $to_name, $to_mail, &$subject, &$body, &$headers, $plain_format=TRUE, $attachments=array()) {
+function _views_send_prepare_mail(&$message, $plain_format=TRUE, $attachments=array()) {
+  // Extract all variables/keys from the message.
+  extract($message);
+
   /**
    * TODO: In the future, this module will be able to send an existing node.
    * $key will have to make the difference. A value when we pickup a node, other
@@ -897,9 +929,82 @@ function _views_send_prepare_mail($from_name, $from_mail, $to_name, $to_mail, &$
     $mail['subject'] = mime_header_decode($mail['subject']);
   }
 
-  $subject = $mail['subject'];
-  $body = $mail['body'];
-  $headers = $mail['headers'];
+  // Updating message with data from generated mail
+  $message['subject'] = $mail['subject'];
+  $message['body'] = $mail['body'];
+  $message['headers'] = serialize($mail['headers']);
+}
+
+/**
+ * Sending a prepared message.
+ *
+ * @return
+ *   Boolean indicating if the message was sent successfully.
+ */
+function views_send_deliver($message) {
+  if (is_array($message)) {
+    $message = (object) $message;
+  }
+
+  $key = 'direct';
+  $headers = unserialize($message->headers);
+  $to = _views_send_format_address($message->to_mail, $message->to_name);
+  $from = _views_send_format_address($message->from_mail, $message->from_name);
+
+  $mail = array(
+    'to' => $to,
+    'subject' => $message->subject,
+    'body' => $message->body,
+    'from' => $from,
+    'headers' => $headers,
+  );
+
+  if (VIEWS_SEND_MIMEMAIL) {
+    $mail['subject'] = mime_header_encode($message->subject);
+    mailsystem_set(array(
+      "views_send_$key" => 'MimeMailSystem'
+    ));
+  }
+
+  $system = drupal_mail_system('views_send', $key);
+  return $system->mail($mail);
+}
+
+/**
+ * Preparing and sending a message (coming from a batch job).
+ */
+function views_send_batch_deliver($message, $plain_format, $attachments, &$context) {
+  _views_send_prepare_mail($message, $plain_format, $attachments);
+  $status = views_send_deliver($message);
+
+  if ($status) {
+    if (variable_get('views_send_debug', FALSE)) {
+      watchdog('views_send', 'Message sent to %mail.', array('%mail' => $message['to_mail']));
+    }
+    if (module_exists('rules')) {
+      rules_invoke_event('views_send_email_sent', $message);
+    }
+  }
+  else {
+    $context['results'][] = t('Failed sending message to %mail - spooling it.', 
+      array('%mail' => $message['to_mail']));
+    // Queue the message to the spool table.
+    db_insert('views_send_spool')->fields($message)->execute();
+    if (module_exists('rules')) {
+      rules_invoke_event('views_send_email_added_to_spool', $message);
+    }
+  }
+}
+
+/**
+ * Displays status after sending messages as a batch job.
+ */
+function views_send_batch_deliver_finished($success, $results, $operations) {
+  if ($success) {
+    foreach ($results as $result) {
+      drupal_set_message($result);
+    }
+  }
 }
 
 /**
