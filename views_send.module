@@ -615,7 +615,7 @@ function views_send_queue_mail($params, $selected_rows) {
     // merging them to the user defined headers.
     $headers = _views_send_headers($params['views_send_receipt'], $params['views_send_priority'], $from_mail, $params['views_send_headers']);
 
-    $attachments = $params['views_send_attachments'] ?  $params['views_send_attachments'] : array();
+    $attachments = isset($params['views_send_attachments']) ?  $params['views_send_attachments'] : array();
 
     $message = array(
       'uid' => $user->uid,
