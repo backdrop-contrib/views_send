@@ -1015,6 +1015,9 @@ function views_send_batch_deliver_finished($success, $results, $operations) {
  * Then we check if there is just one key.
  */
 function _views_send_get_from_views_result($views_result, $field, $key=FALSE) {
+  if (empty($field)) {
+    return FALSE;
+  }
   $value = FALSE;
   if (substr($field, 0, 6) == 'field_') {
     $views_value = $views_result->{'field_' . $field};
