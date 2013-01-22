@@ -597,8 +597,21 @@ function views_send_queue_mail($params, $selected_rows) {
       }
     }
 
+    // Views Send specific token replacements
     $subject = str_replace($token_keys, $token_values, $subject);
     $body = str_replace($token_keys, $token_values, $body);
+
+    // Global token replacement, and node/user token replacements
+    // if a nid/uid is found in the views result row.
+    $data = array();
+    if (property_exists($row, 'uid')) {
+      $data['user'] = user_load($row->uid);
+    }
+    if (property_exists($row, 'nid')) {
+      $data['node'] = node_load($row->nid);
+    }
+    $subject = token_replace($subject, $data);
+    $body = token_replace($body, $data);
 
     if (!VIEWS_SEND_MIMEMAIL) {
       $body = drupal_html_to_text($body);
