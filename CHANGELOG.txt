@@ -1,6 +1,11 @@
 
 Views Send 7.x-1.x, xxxx-xx-xx
 ------------------------------
+#1894446 by hansfn: General token replacements doesn't work.
+#1571228 by hansfn: Fatal error when recipient's name not selected.
+#1497118 by hansfn: Queue processing with Batch API on D7.
+By hansfn: Improved Rules integration - email message exposed as tokens.
+#821530 by hansfn: Attachments to messages.
 #1210758 by Sanjo: Incorrect detection of PHP maximum execution time almost exceeded.
 #1513822 by hansfn: Rules integration.
 #1462126 by hansfn: Indicate which selected rows contain invalid e-mail addresses.
