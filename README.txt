@@ -53,4 +53,5 @@ MAINTAINERS & SPONSORS
    Hans Fredrik Nordhaug (hansfn) | http://drupal.org/user/40521
  * Module author of original Drupal 6 version
    Claudiu Cristea (claudiu.cristea) | http://drupal.org/user/56348
- * The Drupal 6 version of this module was sponsored by Grafit SRL | http://www.grafitsolutions.ro
+ * The Drupal 6 version of this module was sponsored by Grafit SRL, 
+   now Webikon | http://www.webikon.com
