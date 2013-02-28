@@ -943,6 +943,8 @@ function _views_send_prepare_mail(&$message, $plain_format=TRUE, $attachments=ar
   }
 
   // Updating message with data from generated mail
+  $message['to_mail'] = $mail['to'];
+  $message['from_mail'] = $mail['from'];
   $message['subject'] = $mail['subject'];
   $message['body'] = $mail['body'];
   $message['headers'] = serialize($mail['headers']);
@@ -961,14 +963,12 @@ function views_send_deliver($message) {
 
   $key = 'direct';
   $headers = unserialize($message->headers);
-  $to = _views_send_format_address($message->to_mail, $message->to_name);
-  $from = _views_send_format_address($message->from_mail, $message->from_name);
 
   $mail = array(
-    'to' => $to,
+    'to' => $message->to_mail,
+    'from' => $message->from_mail,
     'subject' => $message->subject,
     'body' => $message->body,
-    'from' => $from,
     'headers' => $headers,
   );
 
