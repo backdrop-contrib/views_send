@@ -618,7 +618,7 @@ function views_send_queue_mail($params, $selected_rows) {
     $subject = token_replace($subject, $data);
     $body = token_replace($body, $data);
 
-    if (!VIEWS_SEND_MIMEMAIL) {
+    if (!VIEWS_SEND_MIMEMAIL || (variable_get('mimemail_format', 'plain_text') == 'plain_text')) {
       $body = drupal_html_to_text($body);
     }
 
