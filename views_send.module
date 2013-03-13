@@ -349,12 +349,14 @@ function views_send_config_form_validate($form, &$form_state) {
   if (!empty($values['views_send_to_mail'])) {
     $wrong_addresses = array();
 
-    $to_mail_field = $values["views_send_to_mail"];
+    $to_mail_field = $values['views_send_tokens'][$values['views_send_to_mail']];
     foreach ($form_state['selection'] as $row_id) {
-      $email_arr = _views_send_get_from_views_result($view->result[$row_id], $to_mail_field, 'email');
-      foreach ($email_arr as $email) {
-        if (!valid_email_address($email)) {
-          $wrong_addresses[$row_id] = $email;
+      $to_mail_rendered = $view->style_plugin->rendered_fields[$row_id][$to_mail_field];
+      $to_mail_arr = explode(',', strip_tags($to_mail_rendered));
+      foreach ($to_mail_arr as $to_mail) {
+        $to_mail = trim($to_mail);
+        if (!valid_email_address($to_mail)) {
+          $wrong_addresses[$row_id] = $to_mail;
           break;
         }
       }
@@ -411,11 +413,14 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
   );
 
   $recipients = array();
+  $to_name_field = $configuration['views_send_tokens'][$configuration['views_send_to_name']];
+  $to_mail_field = $configuration['views_send_tokens'][$configuration['views_send_to_mail']];
   foreach ($form_state['selection'] as $row_id) {
-    $name = _views_send_get_from_views_result($view->result[$row_id], $configuration['views_send_to_name']);
-    $email_arr = _views_send_get_from_views_result($view->result[$row_id], $configuration['views_send_to_mail'], 'email');
-    foreach ($email_arr as $email) {
-      $recipients[] = check_plain(empty($name) ? $email : $name . ' <' . $email . '>');
+    $to_name = strip_tags($view->style_plugin->rendered_fields[$row_id][$to_name_field]);
+    $to_mail_rendered = $view->style_plugin->rendered_fields[$row_id][$to_mail_field];
+    $to_mail_arr = explode(',', strip_tags($to_mail_rendered));
+    foreach ($to_mail_arr as $to_mail) {
+      $recipients[] = check_plain(empty($to_name) ? $to_mail : trim($to_name) . ' <' .  $to_mail . '>');
     }
   }
 
@@ -528,7 +533,8 @@ function views_send_form_submit($form, &$form_state) {
       // Gather the selected views rows.
       $selected_rows = array();
       foreach ($form_state['selection'] as $row_id) {
-        $selected_rows[] = $field->view->result[$row_id];
+        $selected_rows[] = array('result' => $field->view->result[$row_id],
+          'rendered_fields' => $field->view->style_plugin->rendered_fields[$row_id]);
       }
 
       // Queue the email for sending.
@@ -567,10 +573,12 @@ function views_send_queue_mail($params, $selected_rows) {
   $from_mail = trim($params['views_send_from_mail']);
   $from_name = $params['views_send_from_name'];
 
-  foreach ($selected_rows as $row) {
+  $to_mail_key = $params['views_send_tokens'][$params['views_send_to_mail']];
+  $to_name_key = $params['views_send_tokens'][$params['views_send_to_name']];
+  foreach ($selected_rows as $selected_row) {
     // To: parts.
-    $to_mail = _views_send_get_from_views_result($row, $params['views_send_to_mail'], 'email');
-    $to_name = _views_send_get_from_views_result($row, $params['views_send_to_name']);
+    $to_mail = trim(strip_tags($selected_row['rendered_fields'][$to_mail_key]));
+    $to_name = trim(strip_tags($selected_row['rendered_fields'][$to_name_key]));
 
     $subject = $params['views_send_subject'];
     $body = $params['views_send_message']['value'];
@@ -588,18 +596,7 @@ function views_send_queue_mail($params, $selected_rows) {
     $token_keys = $token_values = array();
     foreach ($params['views_send_tokens'] as $field_key => $field_name) {
       $token_keys[] = VIEWS_SEND_TOKEN_PREFIX .  sprintf(VIEWS_SEND_TOKEN_PATTERN, $field_name) . VIEWS_SEND_TOKEN_POSTFIX;
-      if (substr($field_key, 0, 6) == 'field_') {
-        $value = $row->{'field_' . $field_key};
-        $token_values[] = drupal_render($value[0]['rendered']);
-      }
-      else {
-        if (property_exists($row, $field_key)) {
-          $token_values[] = $row->{$field_key};
-        }
-        else {
-          $token_values[] = '';
-        }
-      }
+      $token_values[] = $selected_row['rendered_fields'][$field_name];
     }
 
     // Views Send specific token replacements
@@ -609,11 +606,11 @@ function views_send_queue_mail($params, $selected_rows) {
     // Global token replacement, and node/user token replacements
     // if a nid/uid is found in the views result row.
     $data = array();
-    if (property_exists($row, 'uid')) {
-      $data['user'] = user_load($row->uid);
+    if (property_exists($selected_row['result'], 'uid')) {
+      $data['user'] = user_load($selected_row['result']->uid);
     }
-    if (property_exists($row, 'nid')) {
-      $data['node'] = node_load($row->nid);
+    if (property_exists($selected_row['result'], 'nid')) {
+      $data['node'] = node_load($selected_row['result']->nid);
     }
     $subject = token_replace($subject, $data);
     $body = token_replace($body, $data);
@@ -890,7 +887,7 @@ function _views_send_format_address($mail, $name, $encode = TRUE) {
  *   to_name
  *     String holding the Recipient's name.
  *   to_mail
- *     Array holding the Recipient's e-mail.
+ *     String holding the Recipient's e-mail.
  *   subject
  *     String with the e-mail subject. This argument can be altered here.
  *   body
@@ -921,9 +918,9 @@ function _views_send_prepare_mail(&$message, $plain_format=TRUE, $attachments=ar
   $params['from_formatted'] = _views_send_format_address($from_mail, $from_name);
 
   $params['to_name'] = $to_name;
-  $params['to_mail'] = implode(', ', $to_mail);
+  $params['to_mail'] = $to_mail;
   $to_mail_formatted = array();
-  foreach ($to_mail as $addr) {
+  foreach (explode(',', $to_mail) as $addr) {
     $to_mail_formatted[] = _views_send_format_address($addr, $to_name);
   }
   $params['to_formatted']  = implode(', ', $to_mail_formatted);
@@ -1024,61 +1021,6 @@ function views_send_batch_deliver_finished($success, $results, $operations) {
   if ($success) {
     foreach ($results as $result) {
       drupal_set_message($result);
-    }
-  }
-}
-
-/**
- * Find the value(s) for a given "field" in a Views result (row).
- *
- * If a mail address is requested (with $key set to 'email'), return
- * an array with all values. If not, return the first value found as
- * a string.
- *
- * If the "field" is a proper field, we check the raw array.
- * First we look for "value" and then for a specific key if given.
- * Then we check if there is just one key.
- */
-function _views_send_get_from_views_result($views_result, $field, $key=FALSE) {
-  if (empty($field)) {
-    return FALSE;
-  }
-  $values = array();
-  if (substr($field, 0, 6) == 'field_') {
-    $views_result_field = $views_result->{'field_' . $field};
-    foreach ($views_result_field as $views_value) {
-      $value = FALSE;
-      if (isset($views_value['raw']['value'])) {
-        $value = $views_value['raw']['value'];
-      }
-      else {
-        if ($key && isset($views_value['raw'][$key])) {
-          $value = $views_value['raw'][$key];
-        }
-        if (!$value && count($views_value['raw']) == 1) {
-          $value = array_pop($views_value['raw']);
-        }
-      }
-      $values[] = $value;
-    }
-  }
-  else {
-    $values[] = $views_result->{$field};
-  }
-
-  if (count($values) == 0) {
-    return FALSE;
-  }
-  else {
-    // Allow multiple values for e-mail, else return the first value.
-    if ($key == 'email') {
-      // Remove leading/ending whitespace here in stead of in all
-      // the valid_email_address calls.
-      array_walk($values, 'trim');
-      return $values;
-    }
-    else {
-      return $values[0];
     }
   }
 }
