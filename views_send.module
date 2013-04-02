@@ -220,7 +220,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
   $form['mail']['views_send_subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Subject'),
-    '#description' => t('Enter the e-mail\'s subject line.'),
+    '#description' => t('Enter the e-mail\'s subject. You can use tokens in the subject.'),
     '#maxlen' => 255,
     '#required' => TRUE,
     '#default_value' => variable_get('views_send_subject_' . $display, ''),
@@ -230,21 +230,44 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#type' => 'text_format',
     '#format' => isset($saved_message['format']) ? $saved_message['format'] : 'plain_text',
     '#title' => t('Message'),
-    '#description' => t('Enter the body of the message. You can use the following token replacements.'),
+    '#description' => t('Enter the body of the message. You can use tokens in the message.'),
     '#required' => TRUE,
     '#rows' => 10,
     '#default_value' => isset($saved_message['value']) ? $saved_message['value'] : '',
   );
   $form['mail']['token'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Replacements'),
-    '#description' => t('You can use these token replacements in Subject or Message Body.'),
+    '#title' => t('Tokens'),
+    '#description' => t('You can use the following tokens in the subject or message.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
-  $form['mail']['token']['tokens'] = array(
-    '#markup' => theme('views_send_token_help', $fields_name_text),
-  );
+  if (!module_exists('token')) {
+    $form['mail']['token']['tokens'] = array(
+      '#markup' => theme('views_send_token_help', $fields_name_text)
+    );
+  }
+  else {
+    $form['mail']['token']['views_send'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Views Send specific tokens'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['mail']['token']['views_send']['tokens'] = array(
+      '#markup' => theme('views_send_token_help', $fields_name_text)
+    );
+    $form['mail']['token']['general'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('General tokens'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $token_types = array('site', 'user', 'node', 'current-date');
+    $form['mail']['token']['general']['tokens'] = array(
+      '#markup' => theme('token_tree', array('token_types' => $token_types))
+    );
+  }
   if (VIEWS_SEND_MIMEMAIL && user_access('attachments with views_send')) {
     // set the form encoding type
     $form['#attributes']['enctype'] = "multipart/form-data";
@@ -1039,63 +1062,38 @@ function views_send_batch_deliver_finished($success, $results, $operations) {
  * @todo: Add help for other tokens
  */
 function theme_views_send_token_help($fields) {
-  if (!module_exists('token')) {
-    $headers = array(t('Token'), t('Replacement value'));
-    $rows = array();
-    $rows[] = array(array('data' => t('View row tokens'), 'class' => 'region', 'colspan' => 2));
-    foreach ($fields as $field => $title) {
-      $rows[] = array(VIEWS_SEND_TOKEN_PREFIX .  sprintf(VIEWS_SEND_TOKEN_PATTERN, $field) . VIEWS_SEND_TOKEN_POSTFIX, $title);
-    }
-    $output = theme('table', array('headers' => $headers, 'rows' => $rows));
+  $header = array(t('Token'), t('Replacement value'));
+  $rows = array();
+  foreach ($fields as $field => $title) {
+    $rows[] = array(VIEWS_SEND_TOKEN_PREFIX .  sprintf(VIEWS_SEND_TOKEN_PATTERN, $field) . VIEWS_SEND_TOKEN_POSTFIX, $title);
   }
-  else {
-    $output = theme('token_tree', array('token_types' => 'all'));
-  }
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
   return $output;
 }
 
 if (module_exists('token')) {
   /**
    * Implements hook_token_info().
+   *
+   * These token are used by Rules and not in the Views form.
    */
   function views_send_token_info() {
     $data = array();
-    $fields_name_text = _views_send_get_fields_and_tokens(NULL, 'fields_name_text');
-    if ($fields_name_text) {
-      // We are in the Views form config
-      foreach ($fields_name_text as $field => $title) {
-        $data[$field] = array(
-          'name' => $title,
-          'description' => ''
-        );
-      }
-      $type = array(
-        'name' => t('Views Send'),
-        'description' => t('Tokens for Views Send.'),
-        'needs-data' => 'views-send',
-      );
-      return array(
-        'types' => array('views-send' => $type),
-        'tokens' => array('views-send' => $data),
+    foreach (_views_send_email_message_property_info() as $key => $info) {
+      $data[$key] = array(
+        'name' => $info['label'],
+        'description' => ''
       );
     }
-    else {
-      foreach (_views_send_email_message_property_info() as $key => $info) {
-        $data[$key] = array(
-          'name' => $info['label'],
-          'description' => ''
-        );
-      }
-      $type = array(
-        'name' => t('Views Send e-mail message'),
-        'description' => t('Tokens for Views Send e-mail message.'),
-        'needs-data' => 'views_send_email_message',
-      );
-      return array(
-        'types' => array('views_send_email_message' => $type),
-        'tokens' => array('views_send_email_message' => $data),
-      );
-    }
+    $type = array(
+      'name' => t('Views Send e-mail message'),
+      'description' => t('Tokens for Views Send e-mail message.'),
+      'needs-data' => 'views_send_email_message',
+    );
+    return array(
+      'types' => array('views_send_email_message' => $type),
+      'tokens' => array('views_send_email_message' => $data),
+    );
   }
 
   /**
