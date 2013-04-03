@@ -657,7 +657,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
       'from_mail' => $from_mail,
       'to_name' => $to_name,
       'to_mail' => $to_mail,
-      'subject' => $subject,
+      'subject' => strip_tags($subject),
       'body' => $body,
       'headers' => $headers,
     );
