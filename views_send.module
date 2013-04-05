@@ -1138,6 +1138,8 @@ function _views_send_get_fields_and_tokens($view, $type) {
     else {
       $field_key = $field_name;
     }
+    // Add field position to ensure unique keys.
+    $field_key .= '_pos_' . $field->position;
     $field_text = $field->label() . ' (' . $field_name . ')';
     $fields[$field_key] = $field_text;
     $tokens[$field_key] = $field_name;
