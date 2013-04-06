@@ -132,7 +132,12 @@ function views_send_form_alter(&$form, &$form_state, $form_id) {
   if ($form_state['step'] == 'views_form_views_form') {
     $form['actions']['submit']['#value'] = t('Send e-mail');
     $form['actions']['submit']['#submit'] = array('views_send_form_submit');
-    $form['#prefix'] = '<div class="views-send-selection-form">';
+    if (isset($form['#prefix']) && ($form['#prefix'] == '<div class="vbo-views-form">')) {
+      $form['#prefix'] = '<div class="vbo-views-form views-send-selection-form">';
+    }
+    else {
+      $form['#prefix'] = '<div class="views-send-selection-form">';
+    }
     $form['#suffix'] = '</div>';
 
     // Add the custom JS for this step of the form.
