@@ -667,6 +667,10 @@ function views_send_queue_mail($params, $selected_rows, $view) {
       'headers' => $headers,
     );
 
+    // Enable other modules to alter the actual message before queueing it
+    // by providing the hook 'views_send_mail_alter'.
+    drupal_alter('views_send_mail', $message);
+
     if ($params['views_send_direct']) {
       $operations[] = array('views_send_batch_deliver', array($message, $plain_format, $attachments));
     }
@@ -678,6 +682,10 @@ function views_send_queue_mail($params, $selected_rows, $view) {
         rules_invoke_event('views_send_email_added_to_spool', $message);
       }
     }
+
+    // Enabled other modules to act just after a message is queued
+    // by providing the hook 'views_send_mail_queued'.
+    module_invoke_all('views_send_mail_queued', $message, $view, $row_id);
   }
 
   if ($params['views_send_direct']) {
