@@ -960,8 +960,9 @@ function _views_send_prepare_mail(&$message, $plain_format=TRUE, $attachments=ar
   $params['headers'] = $headers;
 
   if (VIEWS_SEND_MIMEMAIL) {
+    $mailsystem = mailsystem_get();
     mailsystem_set(array(
-      "views_send_$key" => 'MimeMailSystem'
+      "views_send_$key" => $mailsystem['mimemail']
     ));
     $params['attachments'] = $attachments;
     if ($plain_format) {
@@ -1010,8 +1011,9 @@ function views_send_deliver($message) {
 
   if (VIEWS_SEND_MIMEMAIL) {
     $mail['subject'] = mime_header_encode($message->subject);
+    $mailsystem = mailsystem_get();
     mailsystem_set(array(
-      "views_send_$key" => 'MimeMailSystem'
+      "views_send_$key" => $mailsystem['mimemail']
     ));
   }
 
