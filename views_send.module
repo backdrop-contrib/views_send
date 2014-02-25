@@ -914,7 +914,25 @@ function _views_send_headers($receipt, $priority, $from, $additional_headers) {
  */
 function _views_send_format_address($mail, $name, $encode = TRUE) {
   // Do not format addres on Windows based PHP systems or when $name is empty.
-  return ((substr(PHP_OS, 0, 3) == 'WIN') || empty($name)) ? $mail : '"' . ($encode ? mime_header_encode($name) : $name) . '" <' . $mail . '>';
+  if ((substr(PHP_OS, 0, 3) == 'WIN') || empty($name)) {
+    return $mail;
+  }
+  else {
+    $name = ($encode ? _views_send_mime_header_encode($name) : $name);
+    return sprintf('"%s" <%s>', $name, $mail);
+  }
+}
+
+/**
+ * Returns a mime-encoded string for strings that contain UTF-8.
+ *
+ * Simplified and correct version of mime_header_decode.
+ */ 
+function _views_send_mime_header_encode($string) {
+  if (preg_match('/[^\x20-\x7E]/', $string)) {
+    $string = '=?UTF-8?B?' . base64_encode($string) . '?=';
+  }
+  return $string;
 }
 
 /**
@@ -1021,7 +1039,7 @@ function views_send_deliver($message) {
   );
 
   if (VIEWS_SEND_MIMEMAIL) {
-    $mail['subject'] = mime_header_encode($message->subject);
+    $mail['subject'] = _views_send_mime_header_encode($message->subject);
     $mailsystem = mailsystem_get();
     mailsystem_set(array(
       "views_send_$key" => $mailsystem['mimemail']
