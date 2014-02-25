@@ -61,11 +61,20 @@ function _views_send_get_field($view) {
  *  An array with raw values from the field.
  */
 function _views_send_get_raw_field_from_views_row($view, $row_id, $field_id) {
-  $raw_value = $view->style_plugin->get_field_value($row_id, $field_id);
   $result = array();
-  foreach ($raw_value as $arr) {
-    list($value) = array_values($arr);
-    $result[] = trim($value);
+  $raw_value = $view->style_plugin->get_field_value($row_id, $field_id);
+  if (!is_array($raw_value)) {
+      $result[] = trim($raw_value);
+  } 
+  else { 
+    foreach ($raw_value as $arr) {
+      if (isset($arr['value'])) {
+        $value = $arr['value'];
+      } else {
+        list($value) = array_values($arr);
+      }
+      $result[] = trim($value);
+    }
   }
   return $result;
 }
