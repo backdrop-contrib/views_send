@@ -55,6 +55,22 @@ function _views_send_get_field($view) {
 }
 
 /**
+ * Gets the raw field value from a result row in a view.
+ * 
+ * @return
+ *  An array with raw values from the field.
+ */
+function _views_send_get_raw_field_from_views_row($view, $row_id, $field_id) {
+  $raw_value = $view->style_plugin->get_field_value($row_id, $field_id);
+  $result = array();
+  foreach ($raw_value as $arr) {
+    list($value) = array_values($arr);
+    $result[] = trim($value);
+  }
+  return $result;
+}
+
+/**
  * Implements hook_views_form_substitutions().
  */
 function views_send_views_form_substitutions() {
@@ -379,12 +395,10 @@ function views_send_config_form_validate($form, &$form_state) {
 
     $to_mail_field = $values['views_send_tokens'][$values['views_send_to_mail']];
     foreach ($form_state['selection'] as $row_id) {
-      $to_mail_rendered = $view->style_plugin->get_field($row_id, $to_mail_field);
-      $to_mail_arr = explode(',', strip_tags($to_mail_rendered));
-      foreach ($to_mail_arr as $to_mail) {
-        $to_mail = trim($to_mail);
-        if (!valid_email_address($to_mail)) {
-          $wrong_addresses[$row_id] = $to_mail;
+      $mail_addresses = _views_send_get_raw_field_from_views_row($view, $row_id, $to_mail_field);
+      foreach ($mail_addresses as $mail_address) {
+        if (!valid_email_address($mail_address)) {
+          $wrong_addresses[$row_id] = $mail_address;
           break;
         }
       }
@@ -444,11 +458,10 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
   $to_name_field = $configuration['views_send_tokens'][$configuration['views_send_to_name']];
   $to_mail_field = $configuration['views_send_tokens'][$configuration['views_send_to_mail']];
   foreach ($form_state['selection'] as $row_id) {
-    $to_name = strip_tags($view->style_plugin->get_field($row_id, $to_name_field));
-    $to_mail_rendered = $view->style_plugin->get_field($row_id, $to_mail_field);
-    $to_mail_arr = explode(',', strip_tags($to_mail_rendered));
-    foreach ($to_mail_arr as $to_mail) {
-      $recipients[] = check_plain(empty($to_name) ? $to_mail : trim($to_name) . ' <' .  $to_mail . '>');
+    list($to_name) = _views_send_get_raw_field_from_views_row($view, $row_id, $to_name_field);
+    $mail_addresses = _views_send_get_raw_field_from_views_row($view, $row_id, $to_mail_field);
+    foreach ($mail_addresses as $mail_address) {
+      $recipients[] = check_plain(empty($to_name) ? $mail_address : trim($to_name) . ' <' .  $mail_address . '>');
     }
   }
 
@@ -600,8 +613,8 @@ function views_send_queue_mail($params, $selected_rows, $view) {
   $to_name_key = $params['views_send_tokens'][$params['views_send_to_name']];
   foreach ($selected_rows as $row_id) {
     // To: parts.
-    $to_mail = trim(strip_tags($view->style_plugin->get_field($row_id, $to_mail_key)));
-    $to_name = trim(strip_tags($view->style_plugin->get_field($row_id, $to_name_key)));
+    $to_mail = implode(',', _views_send_get_raw_field_from_views_row($view, $row_id, $to_mail_key));
+    list($to_name) = _views_send_get_raw_field_from_views_row($view, $row_id, $to_name_key);
 
     $subject = $params['views_send_subject'];
     $body = $params['views_send_message']['value'];
@@ -658,10 +671,10 @@ function views_send_queue_mail($params, $selected_rows, $view) {
     $message = array(
       'uid' => $user->uid,
       'timestamp' => time(),
-      'from_name' => $from_name,
-      'from_mail' => $from_mail,
-      'to_name' => $to_name,
-      'to_mail' => $to_mail,
+      'from_name' => trim($from_name),
+      'from_mail' => trim($from_mail),
+      'to_name' => trim($to_name),
+      'to_mail' => trim($to_mail),
       'subject' => strip_tags($subject),
       'body' => $body,
       'headers' => $headers,
@@ -900,8 +913,6 @@ function _views_send_headers($receipt, $priority, $from, $additional_headers) {
  * Build a formatted e-mail address.
  */
 function _views_send_format_address($mail, $name, $encode = TRUE) {
-  $name = trim($name);
-
   // Do not format addres on Windows based PHP systems or when $name is empty.
   return ((substr(PHP_OS, 0, 3) == 'WIN') || empty($name)) ? $mail : '"' . ($encode ? mime_header_encode($name) : $name) . '" <' . $mail . '>';
 }
