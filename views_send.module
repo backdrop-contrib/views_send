@@ -724,7 +724,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
     );
     batch_set($batch);
     drupal_set_message(
-      t('@total messages processed.', array('@total' => count($selected_rows)))
+      format_plural(count($selected_rows), '1 message processed.', '@count messages processed.')
     );
   }
   else {
@@ -735,7 +735,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
     }
 
     drupal_set_message(
-      t('@total messages added to the spool.', array('@total' => count($selected_rows)))
+      format_plural(count($selected_rows), '1 message added to the spool.', '@count messages added to the spool.')
     );
     if (module_exists('rules')) {
       rules_invoke_event('views_send_all_email_added_to_spool', count($selected_rows));
