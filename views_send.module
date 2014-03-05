@@ -1048,13 +1048,16 @@ function views_send_deliver($message) {
   );
 
   if (VIEWS_SEND_MIMEMAIL) {
-    $mail['subject'] = _views_send_mime_header_encode($message->subject);
     $mailsystem = mailsystem_get();
     mailsystem_set(array(
       "views_send_$key" => $mailsystem['mimemail']
     ));
   }
 
+  // Mime encode the subject before passing to the mail function 
+  // to work around a bug in Drupal's mime_header_encode.
+  $mail['subject'] = _views_send_mime_header_encode($message->subject);
+  
   $system = drupal_mail_system('views_send', $key);
   return $system->mail($mail);
 }
