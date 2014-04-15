@@ -1,6 +1,9 @@
 
-Views Send 7.x-1.x, xxxx-xx-xx
+Views Send 7.x-1.0, 2014-04-15
 ------------------------------
+#2202769 by hansfn: Subject not displaying correctly
+#2122909 by hansfn: Unwanted conversion of quotes in fields used for recipient's e-mail and name
+#2023977 by hansfn: Views Send overrides Mail System module configuration
 #1963960 by hansfn: Add hooks.
 #1957442 by hansfn: Token replacement doesn't work for repeated field.
 #1939332 by hansfn: Token list doesn't update.
