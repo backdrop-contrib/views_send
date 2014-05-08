@@ -33,9 +33,22 @@ define('VIEWS_SEND_TOKEN_PREFIX', '[');
 define('VIEWS_SEND_TOKEN_POSTFIX', ']');
 
 /**
- * Detect and store Mime Mail module presence.
+ * Detect if there is MIME support (thorough modules like Mime Mail or Mandrill).
  */
-define('VIEWS_SEND_MIMEMAIL', module_exists('mimemail'));
+define('VIEWS_SEND_MIMEMAIL', module_exists('mimemail') || module_exists('mandrill'));
+
+/**
+ * Sets the mailsystem for Views Send (if not already set).
+ */
+function _views_send_mailsystem_set($key) {
+  $mailsystem = mailsystem_get();
+  $mailsystem_key = "views_send_$key";
+  if (empty($mailsystem[$mailsystem_key])) {
+    mailsystem_set(array(
+      $mailsystem_key => $mailsystem['default-system']
+    ));
+  }
+}
 
 /**
  * Gets the selector field if it exists on the passed-in view.
@@ -181,6 +194,8 @@ function views_send_form_alter(&$form, &$form_state, $form_id) {
 
 /**
  * Multistep form callback for the "configure" step.
+ *
+ @TODO: Hide "Sender" (from) if Mandrill is used.
  */
 function views_send_config_form($form, &$form_state, $view, $output) {
   $display = $view->name . ':' . $view->current_display;
@@ -445,8 +460,13 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
   $configuration = $form_state['configuration'];
 
   if (!VIEWS_SEND_MIMEMAIL && ($configuration['views_send_message']['format'] != 'plain_text')) {
-    drupal_set_message(t("Only plain text is supported in the message. Any HTML will be converted to text. If you want to format the message with HTML, you'll have to install and enable the !mimemail module.",
-      array('!mimemail' => '<a href="http://drupal.org/project/mimemail">Mime Mail</a>'))
+    drupal_set_message(
+      t("Only plain text is supported in the message. Any HTML will be converted to text. If you want to format the message with HTML, you'll have to install and enable the !mimemail or !mandrill module.",
+        array(
+          '!mimemail' => '<a href="http://drupal.org/project/mimemail">Mime Mail</a>',
+          '!mandrill' => '<a href="http://drupal.org/project/mandrill">Mandrill</a>'
+        )
+      )
     );
   }
 
@@ -998,10 +1018,7 @@ function _views_send_prepare_mail(&$message, $plain_format=TRUE, $attachments=ar
   $params['headers'] = $headers;
 
   if (VIEWS_SEND_MIMEMAIL) {
-    $mailsystem = mailsystem_get();
-    mailsystem_set(array(
-      "views_send_$key" => $mailsystem['mimemail']
-    ));
+    _views_send_mailsystem_set($key);
     $params['attachments'] = $attachments;
     if ($plain_format) {
       $params['plain'] = TRUE;
@@ -1048,10 +1065,7 @@ function views_send_deliver($message) {
   );
 
   if (VIEWS_SEND_MIMEMAIL) {
-    $mailsystem = mailsystem_get();
-    mailsystem_set(array(
-      "views_send_$key" => $mailsystem['mimemail']
-    ));
+    _views_send_mailsystem_set($key);
   }
 
   // Mime encode the subject before passing to the mail function 
