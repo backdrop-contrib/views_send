@@ -273,7 +273,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
   $saved_message = variable_get('views_send_message_' . $display);
   $form['mail']['views_send_message'] = array(
     '#type' => 'text_format',
-    '#format' => isset($saved_message['format']) ? $saved_message['format'] : 'plain_text',
+    '#format' => isset($saved_message['format']) ? $saved_message['format'] : filter_fallback_format(),
     '#title' => t('Message'),
     '#description' => t('Enter the body of the message. You can use tokens in the message.'),
     '#required' => TRUE,
