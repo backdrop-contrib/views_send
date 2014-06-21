@@ -1,3 +1,8 @@
+Views Send 7.x-1.1, 2014-06-21
+------------------------------
+#2225631 by hansfn: Using filter_fallback_format() instead of hard-coded value for message text format.
+#2258947 by hansfn: Call to a member function get_value() on a non-object.
+#2089409 by hansfn: Added support for Mandrill.
 
 Views Send 7.x-1.0, 2014-04-15
 ------------------------------
