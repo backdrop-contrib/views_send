@@ -656,7 +656,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
     $to_name_key = false;
     $to_name = '';
   }
-  foreach ($selected_rows as $row_id) {
+  foreach ($selected_rows as $selected_rows_key => $row_id) {
     // To: parts.
     $to_mail = implode(',', _views_send_get_raw_field_from_views_row($view, $row_id, $to_mail_key));
     if ($to_name_key) {
@@ -736,16 +736,23 @@ function views_send_queue_mail($params, $selected_rows, $view) {
     }
     else {
       _views_send_prepare_mail($message, $plain_format, $attachments);
-      // Queue the message to the spool table.
-      db_insert('views_send_spool')->fields($message)->execute();
-      if (module_exists('rules')) {
-        rules_invoke_event('views_send_email_added_to_spool', $message);
+      // Only queue the message if it hasn't been cancelled by another module.
+      if ($message['send']) {
+        unset($message['send']);
+
+        db_insert('views_send_spool')->fields($message)->execute();
+        if (module_exists('rules')) {
+          rules_invoke_event('views_send_email_added_to_spool', $message);
+        }
+
+        // Enabled other modules to act just after a message is queued
+        // by providing the hook 'views_send_mail_queued'.
+        module_invoke_all('views_send_mail_queued', $message, $view, $row_id);
+      }
+      else {
+        unset($selected_rows[$selected_rows_key]);
       }
     }
-
-    // Enabled other modules to act just after a message is queued
-    // by providing the hook 'views_send_mail_queued'.
-    module_invoke_all('views_send_mail_queued', $message, $view, $row_id);
   }
 
   if ($params['views_send_direct']) {
@@ -1057,6 +1064,7 @@ function _views_send_prepare_mail(&$message, $plain_format=TRUE, $attachments=ar
   $message['from_mail'] = $mail['from'];
   $message['subject'] = $mail['subject'];
   $message['body'] = $mail['body'];
+  $message['send'] = $mail['send'];
   $message['headers'] = serialize($mail['headers']);
 }
 
@@ -1099,6 +1107,15 @@ function views_send_deliver($message) {
  */
 function views_send_batch_deliver($message, $plain_format, $attachments, &$context) {
   _views_send_prepare_mail($message, $plain_format, $attachments);
+  if (!$message['send']) {
+    $context['results'][] = t('Skipping sending message to %mail.',
+      array('%mail' => $message['to_mail']));
+    return;
+  }
+  else {
+    unset($message['send']);
+  }
+  
   $status = views_send_deliver($message);
 
   if ($status) {
@@ -1113,6 +1130,7 @@ function views_send_batch_deliver($message, $plain_format, $attachments, &$conte
     $context['results'][] = t('Failed sending message to %mail - spooling it.',
       array('%mail' => $message['to_mail']));
     // Queue the message to the spool table.
+    unset($message['send']);
     db_insert('views_send_spool')->fields($message)->execute();
     if (module_exists('rules')) {
       rules_invoke_event('views_send_email_added_to_spool', $message);
