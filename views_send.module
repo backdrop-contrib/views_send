@@ -1130,7 +1130,6 @@ function views_send_batch_deliver($message, $plain_format, $attachments, &$conte
     $context['results'][] = t('Failed sending message to %mail - spooling it.',
       array('%mail' => $message['to_mail']));
     // Queue the message to the spool table.
-    unset($message['send']);
     db_insert('views_send_spool')->fields($message)->execute();
     if (module_exists('rules')) {
       rules_invoke_event('views_send_email_added_to_spool', $message);
