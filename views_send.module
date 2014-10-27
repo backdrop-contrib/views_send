@@ -75,7 +75,14 @@ function _views_send_get_field($view) {
  */
 function _views_send_get_raw_field_from_views_row($view, $row_id, $field_id) {
   $result = array();
-  $raw_value = $view->style_plugin->get_field_value($row_id, $field_id);
+  if (strpos($field_id, 'custom_text') === 0) {
+    // Handle the special case for custom text fields.
+    $real_field_id = str_replace('custom_text', 'nothing', $field_id);
+    $raw_value = $view->field[$real_field_id]->original_value;
+  }
+  else {
+    $raw_value = $view->style_plugin->get_field_value($row_id, $field_id);
+  }
   if (!is_array($raw_value)) {
       $result[] = trim($raw_value);
   } 
@@ -679,6 +686,10 @@ function views_send_queue_mail($params, $selected_rows, $view) {
     $token_keys = $token_values = array();
     foreach ($params['views_send_tokens'] as $field_key => $field_name) {
       $token_keys[] = VIEWS_SEND_TOKEN_PREFIX .  sprintf(VIEWS_SEND_TOKEN_PATTERN, $field_name) . VIEWS_SEND_TOKEN_POSTFIX;
+      if (strpos($field_name, 'custom_text') === 0) {
+        // Handle the special case for custom text fields.
+        $field_name = str_replace('custom_text', 'nothing', $field_name);
+      }
       $token_values[] = $view->style_plugin->get_field($row_id, $field_name);
     }
 
@@ -1231,7 +1242,12 @@ function _views_send_get_fields_and_tokens($view, $type) {
     if (property_exists($field, 'views_form_callback') || method_exists($field, 'views_form')) {
       continue;
     }
-    if (!empty($field->field_info)) {
+    if ($field instanceof views_handler_field_custom) {
+      $field_key = $field_name;
+      // Using a nice field name (for tokens) for custom text fields.
+      $field_name = str_replace('nothing', 'custom_text', $field_name);;
+    } 
+    elseif (!empty($field->field_info)) {
       $field_key = $field->field_info['field_name'];
     }
     elseif (property_exists($field, 'field_alias')) {
