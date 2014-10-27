@@ -1094,6 +1094,7 @@ function views_send_deliver($message) {
   $headers = unserialize($message->headers);
 
   $mail = array(
+    'id' => 'views_send_' . $key,
     'to' => $message->to_mail,
     'from' => $message->from_mail,
     'subject' => $message->subject,
