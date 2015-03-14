@@ -205,6 +205,10 @@ function views_send_form_alter(&$form, &$form_state, $form_id) {
  @TODO: Hide "Sender" (from) if Mandrill is used.
  */
 function views_send_config_form($form, &$form_state, $view, $output) {
+  if (!empty($form_state['configuration'])) {
+    // Values entered in the "config" step.
+    $config = $form_state['configuration'];
+  }
   $display = $view->name . ':' . $view->current_display;
   $form['display'] = array(
     '#type' => 'value',
@@ -220,7 +224,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#type' => 'textfield',
     '#title' => t('Sender\'s name'),
     '#description' => t("Enter the sender's human readable name."),
-    '#default_value' => variable_get('views_send_from_name_' . $display, variable_get('site_name', '')),
+    '#default_value' => isset($config['views_send_from_name']) ? $config['views_send_from_name'] : variable_get('views_send_from_name_' . $display, variable_get('site_name', '')),
     '#maxlen' => 255,
   );
   $form['from']['views_send_from_mail'] = array(
@@ -228,7 +232,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#title' => t('Sender\'s e-mail'),
     '#description' => t("Enter the sender's e-mail address."),
     '#required' => TRUE,
-    '#default_value' => variable_get('views_send_from_mail_' . $display, variable_get('site_mail', ini_get('sendmail_from'))),
+    '#default_value' => isset($config['views_send_from_mail']) ? $config['views_send_from_mail'] : variable_get('views_send_from_mail_' . $display, variable_get('site_mail', ini_get('sendmail_from'))),
     '#maxlen' => 255,
   );
 
@@ -253,14 +257,14 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#title' => t('Field used for recipient\'s name'),
     '#description' => t('Select which field from the current view will be used as recipient\'s name.'),
     '#options' => $fields_options,
-    '#default_value' => variable_get('views_send_to_name_' . $display, ''),
+    '#default_value' => isset($config['views_send_to_name']) ? $config['views_send_to_name'] : variable_get('views_send_to_name_' . $display, ''),
   );
   $form['to']['views_send_to_mail'] = array(
     '#type' => 'select',
     '#title' => t('Field used for recipient\'s e-mail'),
     '#description' => t('Select which field from the current view will be used as recipient\'s e-mail.'),
     '#options' => $fields_options,
-    '#default_value' => variable_get('views_send_to_mail_' . $display, ''),
+    '#default_value' => isset($config['views_send_to_mail']) ? $config['views_send_to_mail'] : variable_get('views_send_to_mail_' . $display, ''),
     '#required' => TRUE,
   );
   $form['mail'] = array(
@@ -275,18 +279,28 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#description' => t('Enter the e-mail\'s subject. You can use tokens in the subject.'),
     '#maxlen' => 255,
     '#required' => TRUE,
-    '#default_value' => variable_get('views_send_subject_' . $display, ''),
+    '#default_value' => isset($config['views_send_subject']) ? $config['views_send_subject'] : variable_get('views_send_subject_' . $display, ''),
   );
-  $saved_message = variable_get('views_send_message_' . $display);
   $form['mail']['views_send_message'] = array(
     '#type' => 'text_format',
-    '#format' => isset($saved_message['format']) ? $saved_message['format'] : filter_fallback_format(),
     '#title' => t('Message'),
     '#description' => t('Enter the body of the message. You can use tokens in the message.'),
     '#required' => TRUE,
     '#rows' => 10,
-    '#default_value' => isset($saved_message['value']) ? $saved_message['value'] : '',
   );
+  if (isset($config['views_send_message']['value'])) {
+    $form['mail']['views_send_message'] += array(
+      '#format' => $config['views_send_message']['format'],
+      '#default_value' => $config['views_send_message']['value'],
+    );
+  }
+  else {
+    $saved_message = variable_get('views_send_message_' . $display);
+    $form['mail']['views_send_message'] += array(
+      '#format' => isset($saved_message['format']) ? $saved_message['format'] : filter_fallback_format(),
+      '#default_value' => isset($saved_message['value']) ? $saved_message['value'] : '',
+    );
+  }
   $form['mail']['token'] = array(
     '#type' => 'fieldset',
     '#title' => t('Tokens'),
@@ -350,12 +364,12 @@ function views_send_config_form($form, &$form_state, $view, $output) {
       VIEWS_SEND_PRIORITY_LOWEST => t('lowest')
     ),
     '#description' => t('Note that e-mail priority is ignored by a lot of e-mail programs.'),
-    '#default_value' => variable_get('views_send_priority_' . $display, 0),
+    '#default_value' => isset($config['views_send_priority']) ? $config['views_send_priority'] : variable_get('views_send_priority_' . $display, 0),
   );
   $form['additional']['views_send_receipt'] = array(
     '#type' => 'checkbox',
     '#title' => t('Request receipt'),
-    '#default_value' => variable_get('views_send_receipt_' . $display, 0),
+    '#default_value' => isset($config['views_send_receipt']) ? $config['views_send_receipt'] : variable_get('views_send_receipt_' . $display, 0),
     '#description' => t('Request a Read Receipt from your e-mails. A lot of e-mail programs ignore these so it is not a definitive indication of how many people have read your message.'),
   );
   $form['additional']['views_send_headers'] = array(
@@ -363,18 +377,18 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#title' => t('Additional headers'),
     '#description' => t("Additional headers to be send with the message. You'll have to enter one per line. Example:<pre>Reply-To: noreply@example.com\nX-MyCustomHeader: Whatever</pre>"),
     '#rows' => 4,
-    '#default_value' => variable_get('views_send_headers_' . $display, ''),
+    '#default_value' => isset($config['views_send_headers']) ? $config['views_send_headers'] : variable_get('views_send_headers_' . $display, ''),
   );
 
   $form['views_send_direct'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send the message directly using the Batch API.'),
-    '#default_value' => variable_get('views_send_direct_'. $display, TRUE),
+    '#default_value' => isset($config['views_send_direct']) ? $config['views_send_direct'] : variable_get('views_send_direct_'. $display, TRUE),
   );
   $form['views_send_carbon_copy'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send a copy of the message to the sender.'),
-    '#default_value' => variable_get('views_send_carbon_copy_' . $display, TRUE),
+    '#default_value' => isset($config['views_send_carbon_copy']) ? $config['views_send_carbon_copy'] : variable_get('views_send_carbon_copy_' . $display, TRUE),
   );
 
   $form['views_send_remember'] = array(
@@ -553,6 +567,11 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
     '#attributes' => array('class' => array('form-actions')),
     '#weight' => 999,
   );
+  $form['actions']['back'] = array(
+    '#type' => 'submit',
+    '#value' => t('Go back'),
+    '#submit' => array('views_send_form_back_submit'),
+  );
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Send'),
@@ -622,6 +641,18 @@ function views_send_form_submit($form, &$form_state) {
       // Redirect.
       $query = drupal_get_query_parameters($_GET, array('q'));
       $form_state['redirect'] = array($field->view->get_url(), array('query' => $query));
+      break;
+  }
+}
+
+/**
+ * Submit handler that handles back buttons.
+ */
+function views_send_form_back_submit($form, &$form_state) {
+  switch ($form_state['step']) {
+    case 'views_send_confirm_form':
+      $form_state['step'] = 'views_send_config_form';
+      $form_state['rebuild'] = TRUE;
       break;
   }
 }
