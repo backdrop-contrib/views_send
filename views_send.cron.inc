@@ -17,7 +17,7 @@ function views_send_send_from_spool() {
   // Get PHP maximum execution time. 30 seconds default.
   $max_execution_time = ini_get('max_execution_time') ? ini_get('max_execution_time') : VIEWS_SEND_MAX_EXECUTION_TIME;
 
-  // Reset a Drupal timer.
+  // Reset a Backdrop timer.
   timer_start('views_send');
 
   // Retrieve messages to be send.
@@ -72,6 +72,6 @@ function views_send_send_from_spool() {
  */
 function views_send_clear_spool() {
   // TODO: Drupal 7: replace time() with REQUEST_TIME.
-  $expiration_time = time() - variable_get('views_send_spool_expire', 0) * 86400;
+  $expiration_time = time() - config_get('views_send','views_send_spool_expire') * 86400;
   db_query("DELETE FROM {views_send_spool} WHERE status = :status AND timestamp <= :expiry", array(':status' => 1, 'expiry' => $expiration_time));
 }

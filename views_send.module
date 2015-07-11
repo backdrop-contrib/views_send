@@ -20,7 +20,7 @@ define('VIEWS_SEND_PRIORITY_LOW', 4);
 define('VIEWS_SEND_PRIORITY_LOWEST', 5);
 
 /**
- * Capture PHP max_execution_time before drupal_cron_run().
+ * Capture PHP max_execution_time before backdrop_cron_run().
  * Workaround for Drupal 6.14. See http://drupal.org/node/584334
  */
 define('VIEWS_SEND_MAX_EXECUTION_TIME', ini_get('max_execution_time'));
@@ -112,7 +112,7 @@ function views_send_views_form_substitutions() {
     '#attributes' => array('class' => array('views-send-table-select-all')),
   );
   return array(
-    $select_all_placeholder => drupal_render($select_all),
+    $select_all_placeholder => backdrop_render($select_all),
   );
 }
 
@@ -138,7 +138,7 @@ function theme_views_send_select_all($variables) {
   );
 
   $output = '<div class="views-send-select-all-markup">';
-  $output .= drupal_render($form);
+  $output .= backdrop_render($form);
   $output .= '</div>';
 
   return $output;
@@ -162,7 +162,7 @@ function views_send_form_alter(&$form, &$form_state, $form_id) {
       $field->view->override_path = $_GET['q'];
     }
   }
-  $query = drupal_get_query_parameters($_GET, array('q'));
+  $query = backdrop_get_query_parameters($_GET, array('q'));
   $form['#action'] = url($field->view->get_url(), array('query' => $query));
 
   // Cache the built form to prevent it from being rebuilt prior to validation
@@ -172,7 +172,7 @@ function views_send_form_alter(&$form, &$form_state, $form_id) {
   $form_state['cache'] = TRUE;
 
   // Add the custom CSS for all steps of the form.
-  $form['#attached']['css'][] = drupal_get_path('module', 'views_send') . '/views_send.css';
+  $form['#attached']['css'][] = backdrop_get_path('module', 'views_send') . '/views_send.css';
 
   if ($form_state['step'] == 'views_form_views_form') {
     $form['actions']['submit']['#value'] = t('Send e-mail');
@@ -186,7 +186,7 @@ function views_send_form_alter(&$form, &$form_state, $form_id) {
     $form['#suffix'] = '</div>';
 
     // Add the custom JS for this step of the form.
-    $form['#attached']['js'][] = drupal_get_path('module', 'views_send') . '/views_send.js';
+    $form['#attached']['js'][] = backdrop_get_path('module', 'views_send') . '/views_send.js';
 
     // Adds the "select all" functionality for non-table style plugins
     // if the view has results.
@@ -396,7 +396,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#title' => t('Remember these values for the next time a mass mail is sent. (The values are not stored per user.)'),
     '#default_value' => variable_get('views_send_remember_' . $display, FALSE),
   );
-  $query = drupal_get_query_parameters($_GET, array('q'));
+  $query = backdrop_get_query_parameters($_GET, array('q'));
   $form['actions'] = array(
     '#type' => 'container',
     '#attributes' => array('class' => array('form-actions')),
@@ -475,13 +475,13 @@ function views_send_config_form_validate($form, &$form_state) {
  * Allows the user to preview the whole message before sending it.
  */
 function views_send_confirm_form($form, &$form_state, $view, $output) {
-  drupal_set_title(t('Review and confirm the message that is about to be sent'));
+  backdrop_set_title(t('Review and confirm the message that is about to be sent'));
 
   // Values entered in the "config" step.
   $configuration = $form_state['configuration'];
 
   if (!VIEWS_SEND_MIMEMAIL && ($configuration['views_send_message']['format'] != 'plain_text')) {
-    drupal_set_message(
+    backdrop_set_message(
       t("Only plain text is supported in the message. Any HTML will be converted to text. If you want to format the message with HTML, you'll have to install and enable the !mimemail or !mandrill module.",
         array(
           '!mimemail' => '<a href="http://drupal.org/project/mimemail">Mime Mail</a>',
@@ -561,7 +561,7 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
     );
   }
 
-  $query = drupal_get_query_parameters($_GET, array('q'));
+  $query = backdrop_get_query_parameters($_GET, array('q'));
   $form['actions'] = array(
     '#type' => 'container',
     '#attributes' => array('class' => array('form-actions')),
@@ -639,7 +639,7 @@ function views_send_form_submit($form, &$form_state) {
       views_send_queue_mail($form_state['configuration'], $form_state['selection'], $field->view);
 
       // Redirect.
-      $query = drupal_get_query_parameters($_GET, array('q'));
+      $query = backdrop_get_query_parameters($_GET, array('q'));
       $form_state['redirect'] = array($field->view->get_url(), array('query' => $query));
       break;
   }
@@ -671,7 +671,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
   global $user;
 
   if (!user_access('mass mailing with views_send')) {
-    drupal_set_message(
+    backdrop_set_message(
       t('No mails sent since you aren\'t allowed to send mass mail with Views. (<a href="@permurl">Edit the permission.</a>)',
         array('@permurl' => url('admin/people/permissions', array('fragment' => 'module-views_send')))),
       'error'
@@ -707,7 +707,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
 
     // This shouldn't happen, but better be 100% sure.
     if (!filter_access($formats[$params['format']])) {
-      drupal_set_message(t('No mails sent since an illegale format is selected for the message.'));
+      backdrop_set_message(t('No mails sent since an illegale format is selected for the message.'));
       return;
     }
 
@@ -741,7 +741,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
     $body = token_replace($body, $data);
 
     if (!VIEWS_SEND_MIMEMAIL || (variable_get('mimemail_format', 'plain_text') == 'plain_text')) {
-      $body = drupal_html_to_text($body);
+      $body = backdrop_html_to_text($body);
     }
 
     if ($params['format'] == 'plain_text') {
@@ -771,7 +771,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
 
     // Enable other modules to alter the actual message before queueing it
     // by providing the hook 'views_send_mail_alter'.
-    drupal_alter('views_send_mail', $message);
+    backdrop_alter('views_send_mail', $message);
 
     if ($params['views_send_direct']) {
       $operations[] = array('views_send_batch_deliver', array($message, $plain_format, $attachments));
@@ -810,7 +810,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
       'progress_message' => t('Sent @current of @total messages.'),
     );
     batch_set($batch);
-    drupal_set_message(
+    backdrop_set_message(
       format_plural(count($selected_rows), '1 message processed.', '@count messages processed.')
     );
   }
@@ -821,7 +821,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
       db_insert('views_send_spool')->fields($message)->execute();
     }
 
-    drupal_set_message(
+    backdrop_set_message(
       format_plural(count($selected_rows), '1 message added to the spool.', '@count messages added to the spool.')
     );
     if (module_exists('rules')) {
@@ -842,7 +842,7 @@ function views_send_menu() {
     'type' => MENU_NORMAL_ITEM,
     'title' => 'Views Send',
     'description' => 'Configure Views Send general options.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('views_send_settings'),
     'access arguments' => array('administer views_send'),
     'file' => 'views_send.admin.inc',
@@ -893,7 +893,7 @@ function views_send_theme($existing, $type, $theme, $path) {
 function views_send_views_api() {
   return array(
     'api' => 3,
-    'path' => drupal_get_path('module', 'views_send') . '/views',
+    'path' => backdrop_get_path('module', 'views_send') . '/views',
   );
 }
 
@@ -1092,8 +1092,8 @@ function _views_send_prepare_mail(&$message, $plain_format=TRUE, $attachments=ar
     }
   }
 
-  // Call Drupal standard mail function, but without sending.
-  $mail = drupal_mail('views_send', $key, $params['to_formatted'], language_default(), $params, $params['from_formatted'], FALSE);
+  // Call Backdrop standard mail function, but without sending.
+  $mail = backdrop_mail('views_send', $key, $params['to_formatted'], language_default(), $params, $params['from_formatted'], FALSE);
 
   // Add additional Mime Mail post processing.
   if (VIEWS_SEND_MIMEMAIL) {
@@ -1141,7 +1141,7 @@ function views_send_deliver($message) {
   // to work around a bug in Drupal's mime_header_encode.
   $mail['subject'] = _views_send_mime_header_encode($message->subject);
   
-  $system = drupal_mail_system('views_send', $key);
+  $system = backdrop_mail_system('views_send', $key);
   return $system->mail($mail);
 }
 
@@ -1186,7 +1186,7 @@ function views_send_batch_deliver($message, $plain_format, $attachments, &$conte
 function views_send_batch_deliver_finished($success, $results, $operations) {
   if ($success) {
     foreach ($results as $result) {
-      drupal_set_message($result);
+      backdrop_set_message($result);
     }
   }
 }
@@ -1352,4 +1352,25 @@ function _views_send_email_message_property_info() {
   return $propertyinfo;
 }
 
+/**
+ * Implements hook_config_info().
+ */
+function views_send_config_info()
+{
+  $prefixes['views_send.settings'] = array(
+    'label' => t('Views Send settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+
+
+/**
+ * Implements hook_autoload_info().
+ */
+function views_send_autoload_info(){
+  return array(
+    'views_send_handler_field_selector' => 'views_send_handler_field_selector.inc',
+  );
+}
 

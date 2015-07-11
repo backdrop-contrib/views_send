@@ -1,15 +1,15 @@
 (function ($) {
-  Drupal.behaviors.viewsSend = {
+  Backdrop.behaviors.viewsSend = {
     attach: function(context) {
       $('.views-send-selection-form', context).each(function() {
-        Drupal.viewsSend.initTableBehaviors(this);
-        Drupal.viewsSend.initGenericBehaviors(this);
+        Backdrop.viewsSend.initTableBehaviors(this);
+        Backdrop.viewsSend.initGenericBehaviors(this);
       });
     }
   }
 
-  Drupal.viewsSend = Drupal.viewsSend || {};
-  Drupal.viewsSend.initTableBehaviors = function(form) {
+  Backdrop.viewsSend = Backdrop.viewsSend || {};
+  Backdrop.viewsSend.initTableBehaviors = function(form) {
     $('.views-send-table-select-all', form).show();
     // This is the "select all" checkbox in (each) table header.
     $('.views-send-table-select-all', form).click(function() {
@@ -18,7 +18,7 @@
     });
   }
 
-  Drupal.viewsSend.initGenericBehaviors = function(form) {
+  Backdrop.viewsSend.initGenericBehaviors = function(form) {
     // Show the "select all" fieldset.
     $('.views-send-select-all-markup', form).show();
 

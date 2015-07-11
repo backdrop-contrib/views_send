@@ -1,0 +1,6 @@
+{
+  "_config_name" : "views_send.settings",
+  "views_send_throttle" : 20,
+  "views_send_spool_expire" : 0,
+  "views_send_debug" : FALSE
+}

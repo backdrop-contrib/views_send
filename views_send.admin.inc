@@ -13,29 +13,47 @@
 function views_send_settings() {
   $form = array();
 
-  $throttle = drupal_map_assoc(array(1, 10, 20, 30, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000));
+  $throttle = backdrop_map_assoc(array(1, 10, 20, 30, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000));
   $throttle[0] = t('Unlimited');
 
   $form['views_send_throttle'] = array(
     '#type' => 'select',
     '#title' => t('Cron throttle'),
     '#options' => $throttle,
-    '#default_value' => variable_get('views_send_throttle', 20),
+    '#default_value' => config_get('views_send.settings','views_send_throttle'),
     '#description' => t('Sets the numbers of messages sent per cron run. Failure to send will also be counted. Cron execution must not exceed the PHP maximum execution time of %max seconds. You find the time spend to send e-mails in the !recent_logs.', array('%max' => ini_get('max_execution_time'), '!recent_logs' => l(t('Recent log entries'), 'admin/reports/dblog'))),
   );
   $form['views_send_spool_expire'] = array(
     '#type' => 'select',
     '#title' => t('Mail spool expiration'),
     '#options' => array(0 => t('Immediate'), 1 => t('1 day'), 7 => t('1 week'), 14 => t('2 weeks')),
-    '#default_value' => variable_get('views_send_spool_expire', 0),
+    '#default_value' => config_get('views_send.settings','views_send_spool_expire'),
     '#description' => t('E-mails are spooled. How long must messages be retained in the spool after successfull sending.'),
   );
   $form['views_send_debug'] = array(
     '#type' => 'checkbox',
     '#title' => t('Log e-mails'),
-    '#default_value' => variable_get('views_send_debug', FALSE),
+    '#default_value' => config_get('views_send.settings','views_send_debug'),
     '#description' => t('When checked all outgoing mesages are logged in the system log. A logged e-mail does not guarantee that it is send or will be delivered. It only indicates that a message is send to the PHP mail() function. No status information is available of delivery by the PHP mail() function.'),
   );
 
-  return system_settings_form($form);
+
+  // Add a submit button
+  $form['actions']['#type'] = 'actions';
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  );
+
+  return $form;
+}
+
+/**
+ * Submit handler for module_settings_form().
+ */
+function views_send_settings_form_submit($form, &$form_state){
+  $config = config('views_send.settings');
+  $config->set('views_send_throttle', $form_state['values']['views_send_throttle']);
+  $config->set('views_send_spool_expire', $form_state['values']['views_send_spool_expire']);
+  $config->set('views_send_debug', $form_state['values']['views_send_debug']);
 }
