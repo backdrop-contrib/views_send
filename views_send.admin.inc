@@ -34,7 +34,7 @@ function views_send_settings() {
     '#type' => 'checkbox',
     '#title' => t('Log e-mails'),
     '#default_value' => config_get('views_send.settings','views_send_debug'),
-    '#description' => t('When checked all outgoing mesages are logged in the system log. A logged e-mail does not guarantee that it is send or will be delivered. It only indicates that a message is send to the PHP mail() function. No status information is available of delivery by the PHP mail() function.'),
+    '#description' => t('When checked all outgoing messages are logged in the system log. A logged e-mail does not guarantee that it is send or will be delivered. It only indicates that a message is send to the PHP mail() function. No status information is available of delivery by the PHP mail() function.'),
   );
 
 
@@ -51,9 +51,11 @@ function views_send_settings() {
 /**
  * Submit handler for module_settings_form().
  */
-function views_send_settings_form_submit($form, &$form_state){
+function views_send_settings_submit($form, &$form_state){
   $config = config('views_send.settings');
   $config->set('views_send_throttle', $form_state['values']['views_send_throttle']);
   $config->set('views_send_spool_expire', $form_state['values']['views_send_spool_expire']);
   $config->set('views_send_debug', $form_state['values']['views_send_debug']);
+  $config->save();
+  backdrop_set_message(t('The configuration options have been saved.'));
 }
