@@ -1,6 +1,20 @@
 {
-  "_config_name" : "views_send.settings",
-  "views_send_throttle" : 20,
-  "views_send_spool_expire" : 0,
-  "views_send_debug" : 0
+  "_config_name": "views_send.settings",
+  "views_send_throttle": 20,
+  "views_send_spool_expire": 0,
+  "views_send_debug": 0,
+  "views_send_from_name": " ",
+  "views_send_from_mail": " ",
+  "views_send_to_name": " ",
+  "views_send_subject": " ",
+  "views_send_message": " ",
+  "views_send_priority": 0,
+  "views_send_receipt": 0,
+  "views_send_headers": " ",
+  "views_send_direct": 1,
+  "views_send_carbon_copy": 1,
+  "views_send_remember": " ",
+  "mimemail_format": "plain_text",
+  "site_name": " ",
+  "site_mail": " "
 }
