@@ -11,7 +11,7 @@
  * Process the spool queue at cron run.
  */
 function views_send_send_from_spool() {
-  $limit = variable_get('views_send_throttle', 20);
+  $limit = config_get('views_send.settings','views_send_throttle');
   $ok = $fail = $check = 0;
 
   // Get PHP maximum execution time. 30 seconds default.
@@ -30,7 +30,7 @@ function views_send_send_from_spool() {
     if ($status) {
       // Update the spool status.
       db_query("UPDATE {views_send_spool} SET status = :status WHERE eid = :eid", array(':status' => 1, ':eid' => $message->eid));
-      if (variable_get('views_send_debug', FALSE)) {
+      if (config_get('views_send.settings','views_send_debug')) {
         watchdog('views_send', 'Message sent to %mail.', array('%mail' => $message->to_mail));
       }
       if (module_exists('rules')) {
@@ -53,7 +53,7 @@ function views_send_send_from_spool() {
 
       // Break if exceded.
       if (timer_read('views_send') / 1000 > .8 * $max_execution_time) {
-        watchdog('views_send', 'PHP maximum execution time almost exceeded. Remaining e-mail messages will be sent during the next cron run. If this warning occurs regularly you should reduce the cron throttle setting.', NULL, WATCHDOG_WARNING);
+        watchdog('views_send', 'PHP maximum execution time almost exceeded. Remaining email messages will be sent during the next cron run. If this warning occurs regularly you should reduce the cron throttle setting.', NULL, WATCHDOG_WARNING);
         break;
       }
     }
