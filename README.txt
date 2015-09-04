@@ -9,15 +9,15 @@ General settings can be configured at: Site Configuration > Views Send
 
 USAGE
 
- 1. Create a view and add at least one column containing e-mail addresses.
+ 1. Create a view and add at least one column containing email addresses.
  2. [Optional] Expose Views filters to let the user easily build list of
     recipients using UI.
- 3. Add the "Global: Send e-mail" field to your view. This field provides the checkboxes
+ 3. Add the "Global: Send email" field to your view. This field provides the checkboxes
     that allow the user to select multiple rows.
  4. Save the view, load the page, use exposed filters to build the list, select
-    all or some rows and choose "Send e-mail".
- 5. Fill the message form to configure the e-mail. Use tokens to personalize
-    your e-mail.
+    all or some rows and choose "Send email".
+ 5. Fill the message form to configure the email. Use tokens to personalize
+    your email.
  6. Preview and send the message.
 
 DEPENDENCIES & INTEGRATION

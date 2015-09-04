@@ -12,10 +12,10 @@
  */
 function views_send_schema() {
   $schema['views_send_spool'] = array(
-    'description' => 'Table holds e-mails that are being send on cron.',
+    'description' => 'Table holds emails that are being sent on cron.',
     'fields' => array(
       'eid' => array(
-        'description' => 'The primary identifier for an e-mail.',
+        'description' => 'The primary identifier for an email.',
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE),
@@ -51,7 +51,7 @@ function views_send_schema() {
         'not null' => FALSE,
         'default' => ''),
       'from_mail' => array(
-        'description' => 'The sender e-mail address.',
+        'description' => 'The sender email address.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
@@ -63,24 +63,24 @@ function views_send_schema() {
         'not null' => FALSE,
         'default' => ''),
       'to_mail' => array(
-        'description' => 'The recipient e-mail address.',
+        'description' => 'The recipient email address.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => ''),
       'subject' => array(
-        'description' => 'The e-mail subject.',
+        'description' => 'The email subject.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => ''),
       'body' => array(
-        'description' => 'The e-mail body.',
+        'description' => 'The email body.',
         'type' => 'text',
         'not null' => TRUE,
         'size' => 'big',),
       'headers' => array(
-        'description' => 'The e-mail additional headers.',
+        'description' => 'The email additional headers.',
         'type' => 'text',
         'not null' => TRUE,
         'size' => 'big',),
@@ -93,6 +93,21 @@ function views_send_schema() {
   );
   return $schema;
 }
+
+
+/**
+ * Implements hook_install().
+ */
+function views_send_install() {
+  $config = config('views_send.settings');
+  $config->set('views_send_from_name', config_get('system.core', 'site_name'));
+  $config->set('site_name', config_get('system.core', 'site_name'));
+  $config->set('views_send_from_mail', config_get('system.core', 'site_mail'));
+  $config->set('site_mail', config_get('system.core', 'site_mail'));
+  $config->save();
+}
+
+
 
 /**
  * Implements hook_uninstall().
