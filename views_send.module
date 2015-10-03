@@ -175,8 +175,15 @@ function views_send_form_alter(&$form, &$form_state, $form_id) {
   $form['#attached']['css'][] = backdrop_get_path('module', 'views_send') . '/views_send.css';
 
   if ($form_state['step'] == 'views_form_views_form') {
-    $form['actions']['submit']['#value'] = t('Send email');
-    $form['actions']['submit']['#submit'] = array('views_send_form_submit');
+    $form['actions'] = array(
+      '#type' => 'actions',
+    );
+    $form['actions']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Send email'),
+      '#submit' => array('views_send_form_submit'),
+	);
+
     if (isset($form['#prefix']) && ($form['#prefix'] == '<div class="vbo-views-form">')) {
       $form['#prefix'] = '<div class="vbo-views-form views-send-selection-form">';
     }
@@ -224,12 +231,12 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#type' => 'textfield',
     '#title' => t('Sender\'s name'),
     '#description' => t("Enter the sender's human readable name."),
-    '#default_value' => config_get('views_send.settings','views_send_from_name'),
+    '#default_value' => isset($config['views_send_from_name']) ? $config['views_send_from_name'] : variable_get('views_send_from_name_' . $display, variable_get('site_name', '')),
     '#maxlen' => 255,
   );
   $form['from']['views_send_from_mail'] = array(
     '#type' => 'textfield',
-    '#title' => t('Sender\'s email'),
+    '#title' => t('Sender\'s e-mail'),
     '#description' => t("Enter the sender's email address."),
     '#required' => TRUE,
     '#default_value' => config_get('views_send.settings','views_send_from_mail'),
