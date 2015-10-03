@@ -14,7 +14,5 @@
   "views_send_direct": 1,
   "views_send_carbon_copy": 1,
   "views_send_remember": " ",
-  "mimemail_format": "plain_text",
-  "site_name": " ",
-  "site_mail": " "
+  "mimemail_format": "plain_text"
 }

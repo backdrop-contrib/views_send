@@ -231,7 +231,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#type' => 'textfield',
     '#title' => t('Sender\'s name'),
     '#description' => t("Enter the sender's human readable name."),
-    '#default_value' => isset($config['views_send_from_name']) ? $config['views_send_from_name'] : variable_get('views_send_from_name_' . $display, variable_get('site_name', '')),
+    '#default_value' => config_get('views_send.settings','views_send_from_name'),
     '#maxlen' => 255,
   );
   $form['from']['views_send_from_mail'] = array(
