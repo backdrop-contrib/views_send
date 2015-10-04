@@ -40,13 +40,13 @@ function views_send_settings() {
     '#type' => 'textfield',
     '#title' => t('Send from name'),
     '#default_value' => config_get('views_send.settings','views_send_from_name'),
-	'#description' => t('The name to be shown as the sender of the email.'),
+    '#description' => t('The name to be shown as the sender of the email.'),
   );
-    $form['views_send_from_mail'] = array(
+  $form['views_send_from_mail'] = array(
     '#type' => 'textfield',
     '#title' => t('Send from email address'),
     '#default_value' => config_get('views_send.settings','views_send_from_mail'),
-	'#description' => t('The email address to be shown as the sender of the email.'),
+    '#description' => t('The email address to be shown as the sender of the email.'),
   );
 
   // Add a submit button
