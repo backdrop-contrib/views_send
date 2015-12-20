@@ -747,7 +747,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
     $subject = token_replace($subject, $data);
     $body = token_replace($body, $data);
 
-    if (!VIEWS_SEND_MIMEMAIL || (config_get('views_send.settings','mimemail_format') == 'plain_text')) {
+    if (!VIEWS_SEND_MIMEMAIL || (config_get('mimemail.settings','mimemail_format') == 'plain_text')) {
       $body = backdrop_html_to_text($body);
     }
 
