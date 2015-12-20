@@ -45,7 +45,7 @@ function _views_send_mailsystem_set($key) {
   $mailsystem_key = "views_send_$key";
   if (empty($mailsystem[$mailsystem_key])) {
     mailsystem_set(array(
-      $mailsystem_key => $mailsystem['default-system']
+      $mailsystem_key => $mailsystem['DefaultMailSystem']
     ));
   }
 }
