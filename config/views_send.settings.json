@@ -13,6 +13,5 @@
   "views_send_headers": " ",
   "views_send_direct": 1,
   "views_send_carbon_copy": 1,
-  "views_send_remember": " ",
-  "mimemail_format": "plain_text"
+  "views_send_remember": " "
 }
