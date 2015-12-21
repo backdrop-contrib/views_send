@@ -180,7 +180,7 @@ function views_send_form_alter(&$form, &$form_state, $form_id) {
     );
     $form['actions']['submit'] = array(
       '#type' => 'submit',
-      '#value' => t('Send email'),
+      '#value' => t('Prepare email'),
       '#submit' => array('views_send_form_submit'),
 	);
 
@@ -231,7 +231,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#type' => 'textfield',
     '#title' => t('Sender\'s name'),
     '#description' => t("Enter the sender's human readable name."),
-    '#default_value' => config_get('views_send.settings','views_send_from_name'),
+    '#default_value' => config_get('views_send.settings','views_send_from_name_'. $display),
     '#maxlen' => 255,
   );
   $form['from']['views_send_from_mail'] = array(
@@ -239,7 +239,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#title' => t('Sender\'s e-mail'),
     '#description' => t("Enter the sender's email address."),
     '#required' => TRUE,
-    '#default_value' => config_get('views_send.settings','views_send_from_mail'),
+    '#default_value' => config_get('views_send.settings','views_send_from_mail_'. $display),
     '#maxlen' => 255,
   );
 
@@ -264,14 +264,14 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#title' => t('Field used for recipient\'s name'),
     '#description' => t('Select which field from the current view will be used as recipient\'s name.'),
     '#options' => $fields_options,
-    '#default_value' => config_get('views_send.settings','views_send_to_name'),
+    '#default_value' => config_get('views_send.settings','views_send_to_name_'. $display),
   );
   $form['to']['views_send_to_mail'] = array(
     '#type' => 'select',
     '#title' => t('Field used for recipient\'s email'),
     '#description' => t('Select which field from the current view will be used as recipient\'s email.'),
     '#options' => $fields_options,
-    '#default_value' => config_get('views_send.settings','views_send_to_mail'),
+    '#default_value' => config_get('views_send.settings','views_send_to_mail_'. $display),
     '#required' => TRUE,
   );
   $form['mail'] = array(
@@ -286,7 +286,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#description' => t('Enter the email\'s subject. You can use tokens in the subject.'),
     '#maxlen' => 255,
     '#required' => TRUE,
-    '#default_value' => config_get('views_send.settings','views_send_subject'),
+    '#default_value' => config_get('views_send.settings','views_send_subject_'. $display),
   );
   $form['mail']['views_send_message'] = array(
     '#type' => 'text_format',
@@ -298,11 +298,12 @@ function views_send_config_form($form, &$form_state, $view, $output) {
   if (isset($config['views_send_message']['value'])) {
     $form['mail']['views_send_message'] += array(
       '#format' => $config['views_send_message']['format'],
-      '#default_value' => $config['views_send_message']['value'],
+      '#default_value' => $config_get['mimemail.settings']['mimemail_format'],
     );
   }
   else {
-    $saved_message = config_get('views_send.settings','views_send_message');
+    $saved_message = config_get('views_send.settings','views_send_message_'.$display);
+		$saved_message['value'] = ''; // ignore previous content of body
     $form['mail']['views_send_message'] += array(
       '#format' => isset($saved_message['format']) ? $saved_message['format'] : filter_fallback_format(),
       '#default_value' => isset($saved_message['value']) ? $saved_message['value'] : '',
@@ -371,12 +372,12 @@ function views_send_config_form($form, &$form_state, $view, $output) {
       VIEWS_SEND_PRIORITY_LOWEST => t('lowest')
     ),
     '#description' => t('Note that email priority is ignored by a lot of email programs.'),
-    '#default_value' => config_get('views_send.settings','views_send_priority'),
+    '#default_value' => config_get('views_send.settings','views_send_priority_'.$display),
   );
   $form['additional']['views_send_receipt'] = array(
     '#type' => 'checkbox',
     '#title' => t('Request receipt'),
-    '#default_value' => config_get('views_send.settings','views_send_receipt'),
+    '#default_value' => config_get('views_send.settings','views_send_receipt_'.$display),
     '#description' => t('Request a Read Receipt from your emails. A lot of email programs ignore these so it is not a definitive indication of how many people have read your message.'),
   );
   $form['additional']['views_send_headers'] = array(
@@ -384,24 +385,24 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#title' => t('Additional headers'),
     '#description' => t("Additional headers to be send with the message. You'll have to enter one per line. Example:<pre>Reply-To: noreply@example.com\nX-MyCustomHeader: Whatever</pre>"),
     '#rows' => 4,
-    '#default_value' => config_get('views_send.settings','views_send_headers'),
+    '#default_value' => config_get('views_send.settings','views_send_headers_'.$display),
   );
 
   $form['views_send_direct'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send the message directly using the Batch API.'),
-    '#default_value' => config_get('views_send.settings','views_send_direct'),
+    '#default_value' => config_get('views_send.settings','views_send_direct_'.$display),
   );
   $form['views_send_carbon_copy'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send a copy of the message to the sender.'),
-    '#default_value' => config_get('views_send.settings','views_send_carbon_copy'),
+    '#default_value' => config_get('views_send.settings','views_send_carbon_copy_'.$display),
   );
 
   $form['views_send_remember'] = array(
     '#type' => 'checkbox',
     '#title' => t('Remember these values for the next time a mass mail is sent. (The values are not stored per user.)'),
-    '#default_value' => config_get('views_send.settings','views_send_remember'),
+    '#default_value' => config_get('views_send.settings','views_send_remember_'.$display),
   );
   $query = backdrop_get_query_parameters($_GET, array('q'));
   $form['actions'] = array(
