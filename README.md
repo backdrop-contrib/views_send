@@ -1,12 +1,17 @@
 # Views Send
 
 Project Views Send provides mass mailing using Views, enabling
-a list of email addresses to be produced with a view and an
-email to the group to be composed and sent.
+a list of email addresses to be produced as part of a view and 
+an email to the group to be composed and sent.
 
-The email messages are queued in a spool table and delivered 
-only on cron.
+The email messages can be sent immediately or can be queued in 
+a spool table and delivered only on cron.
 You can control how many messages will be sent per cron run.
+
+Messages can be prepared in HTML form using Backdrop's
+WYSIWYG editor and then sent by using the separate
+Mime Mail module. Such an email can include images and also
+an attached file.
 
 This is a port from the Drupal module of the same name.
 
