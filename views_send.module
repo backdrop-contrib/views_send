@@ -236,7 +236,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
   );
   $form['from']['views_send_from_mail'] = array(
     '#type' => 'textfield',
-    '#title' => t('Sender\'s e-mail'),
+    '#title' => t('Sender\'s email'),
     '#description' => t("Enter the sender's email address."),
     '#required' => TRUE,
     '#default_value' => config_get('views_send.settings','views_send_from_mail_'. $display),
