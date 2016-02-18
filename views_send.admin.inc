@@ -34,7 +34,7 @@ function views_send_settings() {
     '#type' => 'checkbox',
     '#title' => t('Log emails'),
     '#default_value' => config_get('views_send.settings','views_send_debug'),
-    '#description' => t('When checked all outgoing messages are logged in the system log. A logged email does not guarantee that it is send or will be delivered. It only indicates that a message is send to the PHP mail() function. No status information is available of delivery by the PHP mail() function.'),
+    '#description' => t('When checked all outgoing messages are logged in the system log. A logged email does not guarantee that it is sent or will be delivered. It only indicates that a message is sent to the PHP mail() function. No status information is available of delivery by the PHP mail() function.'),
   );
   $form['views_send_from_name'] = array(
     '#type' => 'textfield',
