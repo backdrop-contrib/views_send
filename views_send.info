@@ -1,7 +1,7 @@
 name = "Views Send"
 description = "Provides a way to send emails from a list created with Views"
-dependencies[] = views
 configure = admin/config/system/views_send
+dependencies[] = mimemail
 package = Views
 backdrop = 1.x
 type = module
