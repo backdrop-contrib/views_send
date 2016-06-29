@@ -28,7 +28,7 @@ define('VIEWS_SEND_MAX_EXECUTION_TIME', ini_get('max_execution_time'));
 /**
  * Token pattern.
  */
-define('VIEWS_SEND_TOKEN_PATTERN', 'views-send:%s');
+define('VIEWS_SEND_TOKEN_PATTERN', 'views-send-%s');
 define('VIEWS_SEND_TOKEN_PREFIX', '[');
 define('VIEWS_SEND_TOKEN_POSTFIX', ']');
 
@@ -212,7 +212,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     // Values entered in the "config" step.
     $config = $form_state['configuration'];
   }
-  $display = $view->name . ':' . $view->current_display;
+  $display = $view->name . '_' . $view->current_display;
   $form['display'] = array(
     '#type' => 'value',
     '#value' => $display,
@@ -227,7 +227,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#type' => 'textfield',
     '#title' => t('Sender\'s name'),
     '#description' => t("Enter the sender's human readable name."),
-    '#default_value' => config_get('views_send.settings', 'views_send_from_name_' . $display),
+    '#default_value' => config_get('views_send.settings', "views_send_$display.from_name"),
     '#maxlen' => 255,
   );
   $form['from']['views_send_from_mail'] = array(
@@ -235,7 +235,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#title' => t('Sender\'s email'),
     '#description' => t("Enter the sender's email address. This will become the 'reply-to' address in the email."),
     '#required' => TRUE,
-    '#default_value' => config_get('views_send.settings', 'views_send_from_mail_' . $display),
+    '#default_value' => config_get('views_send.settings', "views_send_$display.from_mail"),
     '#maxlen' => 255,
   );
 
@@ -260,14 +260,14 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#title' => t('Field used for recipient\'s name'),
     '#description' => t('Select which field from the current view will be used as recipient\'s name.'),
     '#options' => $fields_options,
-    '#default_value' => config_get('views_send.settings', 'views_send_to_name_' . $display),
+    '#default_value' => config_get('views_send.settings', "views_send_$display.to_name"),
   );
   $form['to']['views_send_to_mail'] = array(
     '#type' => 'select',
     '#title' => t('Field used for recipient\'s email'),
     '#description' => t('Select which field from the current view will be used as recipient\'s email.'),
     '#options' => $fields_options,
-    '#default_value' => config_get('views_send.settings', 'views_send_to_mail_' . $display),
+    '#default_value' => config_get('views_send.settings', "views_send_$display.to_mail"),
     '#required' => TRUE,
   );
   $form['mail'] = array(
@@ -282,7 +282,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#description' => t('Enter the email\'s subject. You can use tokens in the subject.'),
     '#maxlen' => 255,
     '#required' => TRUE,
-    '#default_value' => config_get('views_send.settings', 'views_send_subject_' . $display),
+    '#default_value' => config_get('views_send.settings', "views_send_$display.subject"),
   );
   $form['mail']['views_send_message'] = array(
     '#type' => 'text_format',
@@ -298,7 +298,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     );
   }
   else {
-    $saved_message = config_get('views_send.settings', 'views_send_message_' . $display);
+    $saved_message = config_get('views_send.settings', "views_send_$display.message");
     $saved_message['value'] = ''; // ignore previous content of body
     $form['mail']['views_send_message'] += array(
       '#format' => isset($saved_message['format']) ? $saved_message['format'] : filter_fallback_format(),
@@ -368,12 +368,12 @@ function views_send_config_form($form, &$form_state, $view, $output) {
       VIEWS_SEND_PRIORITY_LOWEST => t('lowest')
     ),
     '#description' => t('Note that email priority is ignored by a lot of email programs.'),
-    '#default_value' => config_get('views_send.settings', 'views_send_priority_' . $display),
+    '#default_value' => config_get('views_send.settings', "views_send_$display.priority"),
   );
   $form['additional']['views_send_receipt'] = array(
     '#type' => 'checkbox',
     '#title' => t('Request receipt'),
-    '#default_value' => config_get('views_send.settings', 'views_send_receipt_' . $display),
+    '#default_value' => config_get('views_send.settings', "views_send_$display.receipt"),
     '#description' => t('Request a Read Receipt from your emails. A lot of email programs ignore these so it is not a definitive indication of how many people have read your message.'),
   );
   $form['additional']['views_send_headers'] = array(
@@ -381,24 +381,24 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#title' => t('Additional headers'),
     '#description' => t("Additional headers to be send with the message. You'll have to enter one per line. Example:<pre>Reply-To: noreply@example.com\nX-MyCustomHeader: Whatever</pre>"),
     '#rows' => 4,
-    '#default_value' => config_get('views_send.settings', 'views_send_headers_' . $display),
+    '#default_value' => config_get('views_send.settings', "views_send_$display.headers"),
   );
 
   $form['views_send_direct'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send the message directly using the Batch API.'),
-    '#default_value' => config_get('views_send.settings', 'views_send_direct_' . $display),
+    '#default_value' => config_get('views_send.settings', "views_send_$display.direct"),
   );
   $form['views_send_carbon_copy'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send a copy of the message to the sender.'),
-    '#default_value' => config_get('views_send.settings', 'views_send_carbon_copy_' . $display),
+    '#default_value' => config_get('views_send.settings', "views_send_$display.carbon_copy"),
   );
 
   $form['views_send_remember'] = array(
     '#type' => 'checkbox',
     '#title' => t('Remember these values for the next time a mass mail is sent. (The values are not stored per user.)'),
-    '#default_value' => config_get('views_send.settings', 'views_send_remember_' . $display),
+    '#default_value' => config_get('views_send.settings', "views_send_$display.remember"),
   );
   $query = backdrop_get_query_parameters($_GET, array('q'));
   $form['actions'] = array(
@@ -609,11 +609,9 @@ function views_send_form_submit($form, &$form_state) {
       foreach ($form_state['values'] as $key => $value) {
         $key = ($key == 'format') ? 'views_send_message_format' : $key;
         if (substr($key, 0, 11) == 'views_send_') {
+				  $key = substr($key,11);
           if ($form_state['values']['views_send_remember']) {
-            config_set('views_send.settings', $key . '_' . $display, $value);
-          }
-          else {
-            variable_del($key . '_' . $display);
+            config_set('views_send.settings', "views_send_$display.$key", $value);
           }
         }
       }
@@ -718,7 +716,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
 
     // This shouldn't happen, but better be 100% sure.
     if (!filter_access($formats[$params['format']])) {
-      backdrop_set_message(t('No mails sent since an illegale format is selected for the message.'));
+      backdrop_set_message(t('No mails sent since an illegal format is selected for the message.'));
       return;
     }
 
