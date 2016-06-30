@@ -54,7 +54,10 @@ form.views-send-preview .views-send-preview-value {
 
 #views-send-preview-message {
   height: 150px;
-  white-space:pre;
+}
+#views-send-preview-message p {
+  margin: 0 0 0.5em;
+	width: 90%;
 }
 
 #views-send-preview-headers, #views-send-preview-attachments {
