@@ -3,6 +3,7 @@
   "views_send_throttle": 20,
   "views_send_spool_expire": 0,
   "views_send_debug": 0,
+  "views_send_additional_options": 0,
   "views_send_from_name": " ",
   "views_send_from_mail": " ",
   "views_send_to_name": " ",
