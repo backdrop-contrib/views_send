@@ -349,41 +349,42 @@ function views_send_config_form($form, &$form_state, $view, $output) {
       '#description' => t('NB! The attached file is stored once per recipient in the database if you aren\'t sending the message directly.'),
     );
   }
-
-  $form['additional'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Additional email options'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-  $form['additional']['views_send_priority'] = array(
-    '#type' => 'select',
-    '#title' => t('Priority'),
-    '#options' => array(
-      VIEWS_SEND_PRIORITY_NONE => t('none'),
-      VIEWS_SEND_PRIORITY_HIGHEST => t('highest'),
-      VIEWS_SEND_PRIORITY_HIGH => t('high'),
-      VIEWS_SEND_PRIORITY_NORMAL => t('normal'),
-      VIEWS_SEND_PRIORITY_LOW => t('low'),
-      VIEWS_SEND_PRIORITY_LOWEST => t('lowest')
-    ),
-    '#description' => t('Note that email priority is ignored by a lot of email programs.'),
-    '#default_value' => config_get('views_send.settings', "views_send_$display.priority"),
-  );
-  $form['additional']['views_send_receipt'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Request receipt'),
-    '#default_value' => config_get('views_send.settings', "views_send_$display.receipt"),
-    '#description' => t('Request a Read Receipt from your emails. A lot of email programs ignore these so it is not a definitive indication of how many people have read your message.'),
-  );
-  $form['additional']['views_send_headers'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Additional headers'),
-    '#description' => t("Additional headers to be send with the message. You'll have to enter one per line. Example:<pre>Reply-To: noreply@example.com\nX-MyCustomHeader: Whatever</pre>"),
-    '#rows' => 4,
-    '#default_value' => config_get('views_send.settings', "views_send_$display.headers"),
-  );
-
+  $show_additional = config_get('views_send.settings','views_send_additional_options');
+	if($show_additional){
+    $form['mail']['additional'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Additional email options'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['mail']['additional']['views_send_priority'] = array(
+      '#type' => 'select',
+      '#title' => t('Priority'),
+      '#options' => array(
+        VIEWS_SEND_PRIORITY_NONE => t('none'),
+        VIEWS_SEND_PRIORITY_HIGHEST => t('highest'),
+        VIEWS_SEND_PRIORITY_HIGH => t('high'),
+        VIEWS_SEND_PRIORITY_NORMAL => t('normal'),
+        VIEWS_SEND_PRIORITY_LOW => t('low'),
+        VIEWS_SEND_PRIORITY_LOWEST => t('lowest')
+      ),
+      '#description' => t('Note that email priority is ignored by a lot of email programs.'),
+      '#default_value' => config_get('views_send.settings', "views_send_$display.priority"),
+    );
+    $form['mail']['additional']['views_send_receipt'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Request receipt'),
+      '#default_value' => config_get('views_send.settings', "views_send_$display.receipt"),
+      '#description' => t('Request a Read Receipt from your emails. A lot of email programs ignore these so it is not a definitive indication of how many people have read your message.'),
+    );
+    $form['mail']['additional']['views_send_headers'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Additional headers'),
+      '#description' => t("Additional headers to be send with the message. You'll have to enter one per line. Example:<pre>Reply-To: noreply@example.com\nX-MyCustomHeader: Whatever</pre>"),
+      '#rows' => 4,
+      '#default_value' => config_get('views_send.settings', "views_send_$display.headers"),
+    );
+  }
   $form['views_send_direct'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send the message directly using the Batch API.'),
@@ -550,12 +551,14 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
   foreach (_views_send_headers($configuration['views_send_receipt'], $configuration['views_send_priority'], $configuration['views_send_from_mail'], $configuration['views_send_headers']) as $key => $value) {
     $headers[] = $key . ': ' . $value;
   }
-
-  $form['headers'] = array(
-    '#type' => 'item',
-    '#title' => t('Headers'),
-    '#markup' => '<div id="views-send-preview-headers" class="views-send-preview-value">' . implode('<br />', $headers) . '</div>',
-  );
+  $show_additional = config_get('views_send.settings','views_send_additional_options');
+	if($show_additional){
+    $form['headers'] = array(
+      '#type' => 'item',
+      '#title' => t('Headers'),
+      '#markup' => '<div id="views-send-preview-headers" class="views-send-preview-value">' . implode('<br />', $headers) . '</div>',
+    );
+	}
   if (VIEWS_SEND_MIMEMAIL && !empty($configuration['views_send_attachments']) && user_access('attachments with views_send')) {
     foreach ($configuration['views_send_attachments'] as $attachment) {
       $attachments[] = $attachment['filename'];
@@ -609,7 +612,7 @@ function views_send_form_submit($form, &$form_state) {
       foreach ($form_state['values'] as $key => $value) {
         $key = ($key == 'format') ? 'views_send_message_format' : $key;
         if (substr($key, 0, 11) == 'views_send_') {
-				  $key = substr($key,11);
+          $key = substr($key, 11);
           if ($form_state['values']['views_send_remember']) {
             config_set('views_send.settings', "views_send_$display.$key", $value);
           }

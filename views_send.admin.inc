@@ -36,6 +36,12 @@ function views_send_settings() {
     '#default_value' => config_get('views_send.settings','views_send_debug'),
     '#description' => t('When checked all outgoing messages are logged in the system log. A logged email does not guarantee that it is sent or will be delivered. It only indicates that a message is sent to the PHP mail() function. No status information is available of delivery by the PHP mail() function.'),
   );
+	$form['views_send_additional_options'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show additional email options'),
+    '#default_value' => config_get('views_send.settings','views_send_additional_options'),
+    '#description' => t('When checked the user will be able to use the additional email options.'),
+  );
   $form['views_send_from_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Send from name'),
@@ -67,6 +73,7 @@ function views_send_settings_submit($form, &$form_state){
   $config->set('views_send_throttle', $form_state['values']['views_send_throttle']);
   $config->set('views_send_spool_expire', $form_state['values']['views_send_spool_expire']);
   $config->set('views_send_debug', $form_state['values']['views_send_debug']);
+	$config->set('views_send_additional_options', $form_state['values']['views_send_additional_options']);
   $config->set('views_send_from_name', $form_state['values']['views_send_from_name']);
   $config->set('views_send_from_mail', $form_state['values']['views_send_from_mail']);
   $config->save();
