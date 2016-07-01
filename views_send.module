@@ -349,8 +349,8 @@ function views_send_config_form($form, &$form_state, $view, $output) {
       '#description' => t('NB! The attached file is stored once per recipient in the database if you aren\'t sending the message directly.'),
     );
   }
-  $show_additional = config_get('views_send.settings','views_send_additional_options');
-	if($show_additional){
+  $show_additional = config_get('views_send.settings', 'views_send_additional_options');
+  if ($show_additional) {
     $form['mail']['additional'] = array(
       '#type' => 'fieldset',
       '#title' => t('Additional email options'),
@@ -551,14 +551,14 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
   foreach (_views_send_headers($configuration['views_send_receipt'], $configuration['views_send_priority'], $configuration['views_send_from_mail'], $configuration['views_send_headers']) as $key => $value) {
     $headers[] = $key . ': ' . $value;
   }
-  $show_additional = config_get('views_send.settings','views_send_additional_options');
-	if($show_additional){
+  $show_additional = config_get('views_send.settings', 'views_send_additional_options');
+  if ($show_additional) {
     $form['headers'] = array(
       '#type' => 'item',
       '#title' => t('Headers'),
       '#markup' => '<div id="views-send-preview-headers" class="views-send-preview-value">' . implode('<br />', $headers) . '</div>',
     );
-	}
+  }
   if (VIEWS_SEND_MIMEMAIL && !empty($configuration['views_send_attachments']) && user_access('attachments with views_send')) {
     foreach ($configuration['views_send_attachments'] as $attachment) {
       $attachments[] = $attachment['filename'];
@@ -765,7 +765,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
 
     // We transform receipt, priority in headers,
     // merging them to the user defined headers.
-    $headers = _views_send_headers($params['views_send_receipt'], $params['views_send_priority'], $from_mail, $params['views_send_headers']);
+    $headers = _views_send_headers($params['views_send_receipt'], $params['views_send_priority'], $from_mail, $params['views_send_headers'], $display);
 
     $attachments = isset($params['views_send_attachments']) ? $params['views_send_attachments'] : array();
 
@@ -933,24 +933,13 @@ function views_send_cron() {
  * Implements hook_mail().
  */
 function views_send_mail($key, &$message, $params) {
-
   // This is a simple message send. User inputs the content directly.
-  if ($key == 'direct') {
-
-    // Set the subject.
-    $message['subject'] = $params['subject'];
-
-    // Set the body.
-    $message['body'][] = $params['body'];
-
-    // Add additional headers.
-    $message['headers'] += $params['headers'];
-  }
-
-  // TODO: Implement node message parsing.
-  elseif ($key == 'node') {
-    // Translations, theming, etc...
-  }
+  // Set the subject.
+  $message['subject'] = $params['subject'];
+  // Set the body.
+  $message['body'][] = $params['body'];
+  // Add additional headers.
+  $message['headers'] += $params['headers'];
 }
 
 // === Helper functions ========================================================
@@ -967,7 +956,7 @@ function views_send_mail($key, &$message, $params) {
  *
  * @return Header array with priority and receipt confirmation info
  */
-function _views_send_headers($receipt, $priority, $from, $additional_headers) {
+function _views_send_headers($receipt, $priority, $from, $additional_headers, $viewname = 'test') {
   $headers = array();
 
   // If receipt is requested, add headers.
@@ -1007,7 +996,7 @@ function _views_send_headers($receipt, $priority, $from, $additional_headers) {
 
   // Add general headers.
   $headers['Precedence'] = 'bulk';
-
+  $headers['View-name'] = $viewname;
   // Add additional headers.
   $additional_headers = trim($additional_headers);
   $additional_headers = str_replace("\r", "\n", $additional_headers);
@@ -1083,7 +1072,7 @@ function _views_send_prepare_mail(&$message, $plain_format = TRUE, $attachments 
    * when user inputs the subject & body of the message.
    */
 
-  $key = 'direct';
+  $key = $headers['View-name'];
 
   // Build message parameters.
   $params = array();
@@ -1140,7 +1129,7 @@ function views_send_deliver($message) {
   $key = 'direct';
 
   $headers = unserialize($message->headers);
-
+  $key = $headers['View-name'];
   $mail = array(
     'id' => 'views_send_' . $key,
     'to' => $message->to_mail,
