@@ -29,6 +29,16 @@ This is a port from the Drupal module of the same name.
   + send from name
   + send from email address
 
+## Templates
+
+This latest release of Views Send for Backdrop provides for customised
+templates for specific views. If, for example, your create a view with
+machine name test_views_send_page_2, you can create a variant of the basic
+Mimemail template mimemail-message.tpl.php and name a modified version
+mimemail-message--views-send--test-views-send-page-2.tpl.php,
+note the use of hyphens in place of underscores, and double hyphens
+in some situations. This variant template should be stored in your site's
+theme folder.
 
 
 ## Help & Documentation</h2>
