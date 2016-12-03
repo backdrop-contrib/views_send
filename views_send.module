@@ -385,6 +385,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
       '#default_value' => config_get('views_send.settings', "views_send_$display.headers"),
     );
   }
+
   $form['views_send_direct'] = array(
     '#type' => 'checkbox',
     '#title' => t('Send the message directly using the Batch API.'),
@@ -546,12 +547,16 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
     '#title' => t('Message'),
     '#markup' => '<div id="views-send-preview-message" class="views-send-preview-value">' . check_markup($configuration['views_send_message']['value'], $configuration['views_send_message']['format']) . '</div>',
   );
-
+  $show_additional = config_get('views_send.settings', 'views_send_additional_options');
+  if (!$show_additional) {
+    $configuration['views_send_receipt'] = 0;
+    $configuration['views_send_priority'] = 0;
+    $configuration['views_send_headers'] = '';
+  }
   $headers = array();
   foreach (_views_send_headers($configuration['views_send_receipt'], $configuration['views_send_priority'], $configuration['views_send_from_mail'], $configuration['views_send_headers']) as $key => $value) {
     $headers[] = $key . ': ' . $value;
   }
-  $show_additional = config_get('views_send.settings', 'views_send_additional_options');
   if ($show_additional) {
     $form['headers'] = array(
       '#type' => 'item',
@@ -765,6 +770,14 @@ function views_send_queue_mail($params, $selected_rows, $view) {
 
     // We transform receipt, priority in headers,
     // merging them to the user defined headers.
+    // check whether additional headers are in use and if not set defaults.
+    $show_additional = config_get('views_send.settings', 'views_send_additional_options');
+    if (!$show_additional) {
+      $params['views_send_receipt'] = 0;
+      $params['views_send_priority'] = 0;
+      $params['views_send_headers'] = '';
+    }
+
     $headers = _views_send_headers($params['views_send_receipt'], $params['views_send_priority'], $from_mail, $params['views_send_headers'], $display);
 
     $attachments = isset($params['views_send_attachments']) ? $params['views_send_attachments'] : array();
