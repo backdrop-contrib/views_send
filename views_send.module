@@ -347,7 +347,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
       '#type' => 'file',
       '#name' => 'files[]',
       '#title' => t('Attachment'),
-      '#description' => t('If your browser allows, you can select more that one file to attach provided they are selected together from the same folder in your PC.'),
+      '#description' => t('If your browser allows, you can select more than one file to attach provided they are selected together from the same folder in your PC.'),
 			'#attributes' => array('multiple' => 'multiple'),
     );
   }
