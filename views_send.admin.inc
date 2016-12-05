@@ -12,7 +12,6 @@
  */
 function views_send_settings() {
   $form = array();
-
   $throttle = backdrop_map_assoc(array(1, 10, 20, 30, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000));
   $throttle[0] = t('Unlimited');
 
@@ -73,7 +72,7 @@ function views_send_settings_submit($form, &$form_state){
   $config->set('views_send_throttle', $form_state['values']['views_send_throttle']);
   $config->set('views_send_spool_expire', $form_state['values']['views_send_spool_expire']);
   $config->set('views_send_debug', $form_state['values']['views_send_debug']);
-	$config->set('views_send_additional_options', $form_state['values']['views_send_additional_options']);
+  $config->set('views_send_additional_options', $form_state['values']['views_send_additional_options']);
   $config->set('views_send_from_name', $form_state['values']['views_send_from_name']);
   $config->set('views_send_from_mail', $form_state['values']['views_send_from_mail']);
   $config->save();

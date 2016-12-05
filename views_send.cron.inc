@@ -11,7 +11,7 @@
  * Process the spool queue at cron run.
  */
 function views_send_send_from_spool() {
-  $limit = config_get('views_send.settings','views_send_throttle');
+  $limit = config_get('views_send.settings', 'views_send_throttle');
   $ok = $fail = $check = 0;
 
   // Get PHP maximum execution time. 30 seconds default.
@@ -29,8 +29,11 @@ function views_send_send_from_spool() {
 
     if ($status) {
       // Update the spool status.
-      db_query("UPDATE {views_send_spool} SET status = :status WHERE eid = :eid", array(':status' => 1, ':eid' => $message->eid));
-      if (config_get('views_send.settings','views_send_debug')) {
+      db_query("UPDATE {views_send_spool} SET status = :status WHERE eid = :eid", array(
+        ':status' => 1,
+        ':eid' => $message->eid
+      ));
+      if (config_get('views_send.settings', 'views_send_debug')) {
         watchdog('views_send', 'Message sent to %mail.', array('%mail' => $message->to_mail));
       }
       if (module_exists('rules')) {
@@ -51,7 +54,7 @@ function views_send_send_from_spool() {
       // Reset the counter.
       $check = 0;
 
-      // Break if exceded.
+      // Break if exceeded.
       if (timer_read('views_send') / 1000 > .8 * $max_execution_time) {
         watchdog('views_send', 'PHP maximum execution time almost exceeded. Remaining email messages will be sent during the next cron run. If this warning occurs regularly you should reduce the cron throttle setting.', NULL, WATCHDOG_WARNING);
         break;
@@ -61,8 +64,10 @@ function views_send_send_from_spool() {
 
   if ($ok + $fail > 0) {
     // Log results and exit.
-    watchdog('views_send', '%ok messages sent in %sec seconds, %fail failed sending.',
-      array('%ok' => $ok, '%sec' => timer_read('views_send') / 1000, '%fail' => $fail)
+    watchdog('views_send', '%ok messages sent in %sec seconds, %fail failed sending.', array('%ok' => $ok,
+        '%sec' => timer_read('views_send') / 1000,
+        '%fail' => $fail
+      )
     );
   }
 }
@@ -71,7 +76,9 @@ function views_send_send_from_spool() {
  * Clear the expired items from spool.
  */
 function views_send_clear_spool() {
-  // TODO: Drupal 7: replace time() with REQUEST_TIME.
-  $expiration_time = time() - config_get('views_send','views_send_spool_expire') * 86400;
-  db_query("DELETE FROM {views_send_spool} WHERE status = :status AND timestamp <= :expiry", array(':status' => 1, 'expiry' => $expiration_time));
+  $expiration_time = time() - config_get('views_send', 'views_send_spool_expire') * 86400;
+  db_query("DELETE FROM {views_send_spool} WHERE status = :status AND timestamp <= :expiry", array(
+    ':status' => 1,
+    'expiry' => $expiration_time
+  ));
 }
