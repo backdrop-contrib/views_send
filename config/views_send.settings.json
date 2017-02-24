@@ -14,5 +14,6 @@
   "views_send_headers": " ",
   "views_send_direct": 1,
   "views_send_carbon_copy": 1,
-  "views_send_remember": " "
+  "views_send_remember": " ",
+  "views_send_attachment_valid_extensions": "pdf jpg jpeg doc docx xls xlsx txt png"
 }
