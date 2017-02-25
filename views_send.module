@@ -640,7 +640,7 @@ function views_send_form_submit($form, &$form_state) {
         else {
           $file_validators = array();
         }
-
+				$form_state['configuration']['views_send_attachments'] = array();
         foreach ($_FILES['files']['tmp_name'] as $i => $upload) {
           // attempt to save the uploaded file
           $file = file_save_upload($i, $file_validators, $dir, FILE_EXISTS_REPLACE);
