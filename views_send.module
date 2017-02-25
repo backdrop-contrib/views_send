@@ -628,7 +628,7 @@ function views_send_form_submit($form, &$form_state) {
       $form_state['configuration']['display'] = $display;
 
       // If a file was uploaded, process it.
-      if (VIEWS_SEND_MIMEMAIL && user_access('attachments with views_send') && !empty($_FILES['files']['tmp_name']) && is_array($_FILES['files']['tmp_name'])) {
+      if (VIEWS_SEND_MIMEMAIL && user_access('attachments with views_send') && !empty($_FILES['files']['tmp_name'][0]) && is_array($_FILES['files']['tmp_name'])) {
         $dir = file_default_scheme() . '://views_send_attachments';
         file_prepare_directory($dir, FILE_CREATE_DIRECTORY);
 
@@ -641,19 +641,15 @@ function views_send_form_submit($form, &$form_state) {
           $file_validators = array();
         }
 
-        //??????
-        $file = file_save_upload('views_send_attachments', $file_validators, $dir);
-
         foreach ($_FILES['files']['tmp_name'] as $i => $upload) {
           // attempt to save the uploaded file
-          $file = file_save_upload($i, array(), $dir);
+          $file = file_save_upload($i, $file_validators, $dir, FILE_EXISTS_REPLACE);
           // set error if file was not uploaded
           if (!$file) {
             watchdog('views_send',t('Error uploading file attachment.'));
           }
           else {
             // set files to form_state, to process when form is submitted
-            // @todo: when we add a multifile formfield then loop through to add each file to attachments array
             $form_state['configuration']['views_send_attachments'][] = (array) $file;
           }
         }
