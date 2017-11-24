@@ -62,6 +62,22 @@ function views_send_settings() {
     '#description' => t('The email address to be shown as the sender of the email.'),
   );
 
+  // Add default mail system
+  $mailsystem_options = array();
+  $mailsystem_options['DefaultMailSystem'] = 'Default for System';
+  if (VIEWS_SEND_MIMEMAIL) {
+    $mailsystem_options['MimeMailSystem'] = 'Mime Mail';
+  }
+
+  $form['views_send_default_mailsystem'] = array(
+    '#type' => 'select',
+    '#options' => $mailsystem_options,
+    '#title' => t('Default mail system'),
+    '#default_value' => config_get('views_send.settings','views_send_default_mailsystem'),
+    '#description' => t('The default mail system to be used for Views Send messages.'),
+  );
+
+
   // Add a submit button
   $form['actions']['#type'] = 'actions';
   $form['actions']['submit'] = array(
@@ -77,12 +93,17 @@ function views_send_settings() {
  */
 function views_send_settings_submit($form, &$form_state){
   $config = config('views_send.settings');
+  $config->set('views_send_attachment_valid_extensions', $form_state['values']['views_send_attachment_valid_extensions']);
   $config->set('views_send_throttle', $form_state['values']['views_send_throttle']);
   $config->set('views_send_spool_expire', $form_state['values']['views_send_spool_expire']);
   $config->set('views_send_debug', $form_state['values']['views_send_debug']);
   $config->set('views_send_additional_options', $form_state['values']['views_send_additional_options']);
   $config->set('views_send_from_name', $form_state['values']['views_send_from_name']);
   $config->set('views_send_from_mail', $form_state['values']['views_send_from_mail']);
+  $config->set('views_send_default_mailsystem', $form_state['values']['views_send_default_mailsystem']);
   $config->save();
+
+  config_set('system.mail','views_send', $form_state['values']['views_send_default_mailsystem']);
+
   backdrop_set_message(t('The configuration options have been saved.'));
 }
