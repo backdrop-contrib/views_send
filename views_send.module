@@ -429,7 +429,7 @@ function views_send_config_form_validate($form, &$form_state) {
 
   $formats = filter_formats();
   if (!filter_access($formats[$values['views_send_message']['format']])) {
-    form_set_error('views_send_message', t('Illegale format selected'));
+    form_set_error('views_send_message', t('Illegal format selected'));
   }
 
   // Check if sender's email is a valid one.
@@ -626,6 +626,7 @@ function views_send_form_submit($form, &$form_state) {
       }
       $form_state['configuration'] = $form_state['values'];
       $form_state['configuration']['display'] = $display;
+      $form_state['configuration']['views_send_attachments'] = array();
 
       // If a file was uploaded, process it.
       if (VIEWS_SEND_MIMEMAIL && user_access('attachments with views_send') && !empty($_FILES['files']['tmp_name'][0]) && is_array($_FILES['files']['tmp_name'])) {
@@ -640,7 +641,6 @@ function views_send_form_submit($form, &$form_state) {
         else {
           $file_validators = array();
         }
-				$form_state['configuration']['views_send_attachments'] = array();
         foreach ($_FILES['files']['tmp_name'] as $i => $upload) {
           // attempt to save the uploaded file
           $file = file_save_upload($i, $file_validators, $dir, FILE_EXISTS_REPLACE);
@@ -787,8 +787,6 @@ function views_send_queue_mail($params, $selected_rows, $view) {
     }
 
     $headers = _views_send_headers($params['views_send_receipt'], $params['views_send_priority'], $from_mail, $params['views_send_headers'], $display);
-
-    $attachments = isset($params['views_send_attachments']) ? $params['views_send_attachments'] : array();
 
     $message = array(
       'uid' => $user->uid,
