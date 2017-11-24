@@ -289,6 +289,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#description' => t('Enter the body of the message. You can use tokens in the message.'),
     '#required' => FALSE,
     '#rows' => 10,
+    '#attributes' => array('class' => array('text-full')),
   );
   if (isset($config['views_send_message']['value'])) {
     $form['mail']['views_send_message'] += array(
