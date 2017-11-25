@@ -788,6 +788,7 @@ function views_send_queue_mail($params, $selected_rows, $view) {
     }
 
     $headers = _views_send_headers($params['views_send_receipt'], $params['views_send_priority'], $from_mail, $params['views_send_headers'], $display);
+    $attachments = $params['views_send_attachments'];
 
     $message = array(
       'uid' => $user->uid,
