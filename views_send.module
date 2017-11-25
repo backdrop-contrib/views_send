@@ -48,6 +48,14 @@ switch (true) {
 }
 
 /**
+ * Sets the mailsystem to be used for this view.
+ */
+function _views_send_mailsystem_set($key) {
+  $mailsystem_key = "views_send_$key";
+  config_set('system.mail', $mailsystem_key, 'MimeMailSystem');
+}
+
+/**
  * Gets the selector field if it exists on the passed-in view.
  *
  * @return
@@ -1113,6 +1121,7 @@ function _views_send_prepare_mail(&$message, $plain_format = TRUE, $attachments 
   $params['headers'] = $headers;
 
   if (VIEWS_SEND_MIMEMAIL) {
+    _views_send_mailsystem_set($key);
     $params['attachments'] = $attachments;
     if ($plain_format) {
       $params['plain'] = TRUE;
@@ -1160,6 +1169,10 @@ function views_send_deliver($message) {
     'body' => $message->body,
     'headers' => $headers,
   );
+
+  if (VIEWS_SEND_MIMEMAIL) {
+    _views_send_mailsystem_set($key);
+  }
 
   // Mime encode the subject before passing to the mail function 
   // to work around a bug in Drupal's mime_header_encode.
