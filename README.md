@@ -51,9 +51,10 @@ See readme.txt for more information about installation and use.
 This project is GPL v2 software. See the LICENSE.txt file in this directory for complete text.
     
         
-## Current Maintainer for Backdrop
+## Current Maintainers for Backdrop
 
-Graham Oliver (github.com/Graham-72/)
+- Graham Oliver (github.com/Graham-72/)
+- [Steve Moorhouse (albanycomputers)] (https://github.com/albanycomputers)
 
 ## Credits
 
