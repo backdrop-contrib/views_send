@@ -302,12 +302,11 @@ function views_send_config_form($form, &$form_state, $view, $output) {
   if (isset($config['views_send_message']['value'])) {
     $form['mail']['views_send_message'] += array(
       '#format' => $config['views_send_message']['format'],
-      '#default_value' => config_get('mimemail.settings', 'mimemail_format'),
+      //'#default_value' => config_get('mimemail.settings', 'mimemail_format'),
     );
   }
   else {
     $saved_message = config_get('views_send.settings', "views_send_$display.message");
-    $saved_message['value'] = ''; // ignore previous content of body
     $form['mail']['views_send_message'] += array(
       '#format' => isset($saved_message['format']) ? $saved_message['format'] : filter_fallback_format(),
       '#default_value' => isset($saved_message['value']) ? $saved_message['value'] : '',
@@ -503,8 +502,8 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
     backdrop_set_message(
       t("Only plain text is supported in the message. Any HTML will be converted to text. If you want to format the message with HTML, you'll have to install and enable the !mimemail or !mandrill module.",
         array(
-          '!mimemail' => '<a href="http://drupal.org/project/mimemail">Mime Mail</a>',
-          '!mandrill' => '<a href="http://drupal.org/project/mandrill">Mandrill</a>'
+          '!mimemail' => '<a href="https://backdropcms.org/project/mimemail">Mime Mail</a>',
+          '!mandrill' => '<a href="https://backdropcms.org/project/mandrill">Mandrill</a>'
         )
       )
     );
@@ -1174,8 +1173,8 @@ function views_send_deliver($message) {
     _views_send_mailsystem_set($key);
   }
 
-  // Mime encode the subject before passing to the mail function 
-  // to work around a bug in Drupal's mime_header_encode.
+  // Mime encode the subject before passing to the mail function
+  // to work around a bug in mime_header_encode.
   $mail['subject'] = _views_send_mime_header_encode($message->subject);
 
   $system = backdrop_mail_system('views_send', $key);

@@ -1,10 +1,10 @@
 # Views Send
 
 Project Views Send provides mass mailing using Views, enabling
-a list of email addresses to be produced as part of a view and 
+a list of email addresses to be produced as part of a view and
 an email to the group to be composed and sent.
 
-The email messages can be sent immediately or can be queued in 
+The email messages can be sent immediately or can be queued in
 a spool table and delivered only on cron.
 You can control how many messages will be sent per cron run.
 
@@ -45,18 +45,30 @@ theme folder.
 
 See readme.txt for more information about installation and use.
 
+Additional documentation is located in the Wiki: https://github.com/backdrop-contrib/views_send/wiki
+
+## Issues:
+Bugs and Feature requests should be reported in the Issue Queue: https://github.com/backdrop-contrib/views_send/issues
 
 ## License
 
 This project is GPL v2 software. See the LICENSE.txt file in this directory for complete text.
-    
-        
-## Current Maintainers for Backdrop
 
-- Graham Oliver (github.com/Graham-72/)
+
+## Current Maintainer for Backdrop
 - [Steve Moorhouse (albanycomputers)] (https://github.com/albanycomputers)
+- Seeking additional maintainers and contributors.
 
 ## Credits
+
+### Sponsorship:
+- [Albany Computer Services] (https://www.albany-computers.co.uk)
+- [Albany Web Design] (https://www.albanywebdesign.co.uk)
+- [Albany Hosting] (https://www.albany-hosting.co.uk)
+
+### Past Maintainers
+
+- Graham Oliver (github.com/Graham-72/)
 
 ### Maintainer for Drupal:
 
@@ -67,5 +79,5 @@ This project is GPL v2 software. See the LICENSE.txt file in this directory for 
 This port to Backdrop would not, of course, be possible without all
 the work done by the developers and maintainers of the Drupal module.
 
-The Drupal 6 version of this module was sponsored by Grafit SRL, 
+The Drupal 6 version of this module was sponsored by Grafit SRL,
 now Webikon | http://www.webikon.com
