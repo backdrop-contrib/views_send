@@ -135,10 +135,3 @@ function views_send_update_1000() {
   update_variable_del('views_send_spool_expire');
   update_variable_del('views_send_debug');
 }
-
-/**
- * Implements hook_update_last_removed().
- */
-function views_send_update_last_removed() {
-  return 6003;
-}
