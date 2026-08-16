@@ -28,22 +28,66 @@ This is a port from the Drupal module of the same name.
   + log emails (on or off)
   + send from name
   + send from email address
+  + default mail system
+
+
+## Usage
+
+1. Create a view and add at least one column containing email addresses.
+2. [Optional] Expose Views filters so that the list of recipients can be
+   built from the page itself.
+3. Add the "Global: Send email" field to your view. This field provides the
+   checkboxes that allow multiple rows to be selected.
+4. Save the view and load the page. Use any exposed filters to build the list,
+   select all or some of the rows, and press "Prepare email".
+5. Fill in the message form to configure the email. Tokens can be used to
+   personalise both the subject and the body.
+6. Preview the message and send it.
+
+Permissions are set at Administration > People > Permissions:
+"Send mass mail with Views" is required to send anything at all,
+"Use attachments with Views Send" to attach files, and
+"Administer mass mail with Views" for the settings page.
+
+
+## Integration with other modules
+
+- **Mime Mail** — when enabled, messages can be sent as rich HTML and files can
+  be attached. Without it, all messages are converted to plain text.
+  Mandrill, Swift Mailer, and HTML Mail together with Mime Mail are recognised
+  as alternative providers of the same capability.
+- **Token** — the general token tree is offered in the message form. Note that
+  the row-based tokens for the view's own fields are always available, whether
+  or not Token is enabled.
+- **Rules** — three events are provided: after an individual email is sent,
+  after an individual email is added to the spool, and after all emails have
+  been added to the spool.
+
 
 ## Templates
 
-This latest release of Views Send for Backdrop provides for customised
-templates for specific views. If, for example, your create a view with
-machine name test_views_send_page_2, you can create a variant of the basic
-Mimemail template mimemail-message.tpl.php and name a modified version
+Views Send for Backdrop provides for customised templates for specific views.
+If, for example, you create a view with machine name test_views_send_page_2,
+you can create a variant of the basic Mimemail template mimemail-message.tpl.php
+and name a modified version
 mimemail-message--views-send--test-views-send-page-2.tpl.php,
 note the use of hyphens in place of underscores, and double hyphens
 in some situations. This variant template should be stored in your site's
 theme folder.
 
 
-## Help & Documentation</h2>
+## For developers
 
-See readme.txt for more information about installation and use.
+The module provides two hooks:
+
+- `hook_views_send_mail_queued($message, $view, $row_id)`
+  Called just after each message is queued.
+- `hook_views_send_mail_alter(&$message)`
+  Called just before each message is queued. Setting `$message['send']` to
+  FALSE cancels that message.
+
+
+## Help & Documentation
 
 Additional documentation is located in the Wiki: https://github.com/backdrop-contrib/views_send/wiki
 
@@ -70,9 +114,10 @@ This project is GPL v2 software. See the LICENSE.txt file in this directory for 
 
 - Graham Oliver (github.com/Graham-72/)
 
-### Maintainer for Drupal:
+### Maintainers for Drupal:
 
 - hansfn - Hans Fredrik Nordhaug
+- Claudiu Cristea (claudiu.cristea) - author of the original Drupal 6 version
 
 ### Acknowledgement
 

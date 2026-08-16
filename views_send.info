@@ -1,7 +1,12 @@
-name = "Views Send"
-description = "Provides a way to send emails from a list created with Views"
+name = Views Send
+description = Adds a selection column and a send form to any View, for mass mailing the list of email addresses it produces.
 configure = admin/config/system/views_send
+
+dependencies[] = views
 dependencies[] = mimemail
+
 package = Views
 backdrop = 1.x
 type = module
+
+project = views_send
