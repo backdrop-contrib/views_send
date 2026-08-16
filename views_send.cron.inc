@@ -76,9 +76,9 @@ function views_send_send_from_spool() {
  * Clear the expired items from spool.
  */
 function views_send_clear_spool() {
-  $expiration_time = time() - config_get('views_send', 'views_send_spool_expire') * 86400;
+  $expiration_time = time() - config_get('views_send.settings', 'views_send_spool_expire') * 86400;
   db_query("DELETE FROM {views_send_spool} WHERE status = :status AND timestamp <= :expiry", array(
     ':status' => 1,
-    'expiry' => $expiration_time
+    ':expiry' => $expiration_time
   ));
 }

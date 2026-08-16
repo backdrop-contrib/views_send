@@ -64,6 +64,19 @@ Permissions are set at Administration > People > Permissions:
   been added to the spool.
 
 
+## Text formats
+
+The message body is composed in whichever text format Mime Mail is configured
+to use (Administration > Configuration > Media > Mime Mail), since that is the
+format Mime Mail will apply to the body when the message is sent. Composing in
+one format and sending in another is what produces most "it looked right in the
+preview" reports.
+
+Filters that rewrite links are worth checking before you rely on them. An email
+address typed into the body of a message can come out as something other than a
+working mailto: link, depending on which filters the chosen format runs. If you
+need addresses in the body, use a text format with a minimal filter set.
+
 ## Templates
 
 Views Send for Backdrop provides for customised templates for specific views.
