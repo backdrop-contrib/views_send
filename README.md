@@ -41,7 +41,9 @@ This is a port from the Drupal module of the same name.
 4. Save the view and load the page. Use any exposed filters to build the list,
    select all or some of the rows, and press "Prepare email".
 5. Fill in the message form to configure the email. Tokens can be used to
-   personalise both the subject and the body.
+   personalise both the subject and the body. A message you send regularly can
+   be saved as a template and loaded again next time - see "Saved message
+   templates" below.
 6. Preview the message and send it.
 
 Permissions are set at Administration > People > Permissions:
@@ -99,7 +101,36 @@ address typed into the body of a message can come out as something other than a
 working mailto: link, depending on which filters the chosen format runs. If you
 need addresses in the body, use a text format with a minimal filter set.
 
-## Templates
+## Saved message templates
+
+A message you send regularly does not have to be retyped. On the message form,
+"Save as template" keeps the sender, subject and body under a name of your
+choosing; "Load a saved template" fills the form back in from it. Saving under
+the name of an existing template replaces it, so loading a template, editing it
+and saving it again updates it in place.
+
+Templates are saved when you press Next, whether or not you go on to send, so
+writing one is not a commitment to a mailing.
+
+Templates are shared by every view on the site. That makes a message written
+once reusable anywhere, but it also means a body containing tokens such as
+`[views-send-field_surname]` will leave those tokens unreplaced on a view whose
+fields differ. The view each template was saved from is recorded and shown at
+Administration > Configuration > System > Views Send > Templates, where
+templates can also be deleted.
+
+Deliberately **not** saved in a template are the "Field used for recipient's
+name" and "Field used for recipient's email" selections. A field name from one
+view means nothing in another. Those stay with the "Remember these values"
+checkbox, which is separate: it remembers the whole form, including the
+recipient fields, for the one view display you are on.
+
+Each template is stored as its own configuration file
+(`views_send.template.<name>.json`), so templates can be exported and deployed
+between sites like any other Backdrop configuration.
+
+
+## Mime Mail theme templates
 
 Views Send for Backdrop provides for customised templates for specific views.
 If, for example, you create a view with machine name test_views_send_page_2,

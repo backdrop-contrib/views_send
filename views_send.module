@@ -230,20 +230,114 @@ function views_send_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
+ * Resolves the default sender, subject and message for the "configure" step.
+ *
+ * Three sources can supply them and they are not of equal standing. The values
+ * remembered for this view display are the weakest; values carried back from
+ * the preview step beat them, because they are what the user typed; and a
+ * template just loaded beats both, being the most recent thing the user asked
+ * for.
+ *
+ * @param string $display
+ *   The "<view>_<display>" key the remembered values are stored under.
+ * @param array $form_state
+ *   The form state of the current build.
+ *
+ * @return array
+ *   Keys from_name, from_mail and subject, plus message as an array of value
+ *   and format. The format is always one this user is allowed to use.
+ */
+function _views_send_config_form_defaults($display, $form_state) {
+  $keys = array('from_name', 'from_mail', 'subject');
+  $saved_message = config_get('views_send.settings', "views_send_$display.message");
+
+  $defaults = array(
+    'message' => array(
+      'value' => isset($saved_message['value']) ? $saved_message['value'] : '',
+      'format' => isset($saved_message['format']) ? $saved_message['format'] : _views_send_default_format(),
+    ),
+  );
+  foreach ($keys as $key) {
+    $defaults[$key] = config_get('views_send.settings', "views_send_$display.$key");
+  }
+
+  // Returning to this step from the preview: keep what was typed.
+  if (!empty($form_state['configuration'])) {
+    foreach ($keys as $key) {
+      if (isset($form_state['configuration']['views_send_' . $key])) {
+        $defaults[$key] = $form_state['configuration']['views_send_' . $key];
+      }
+    }
+    if (isset($form_state['configuration']['views_send_message']['value'])) {
+      $defaults['message'] = $form_state['configuration']['views_send_message'];
+    }
+  }
+
+  // A template loaded in this build overrides both.
+  if (!empty($form_state['template'])) {
+    foreach ($keys as $key) {
+      if ($form_state['template'][$key] !== '') {
+        $defaults[$key] = $form_state['template'][$key];
+      }
+    }
+    $defaults['message'] = $form_state['template']['message'];
+  }
+
+  // The format may have been deleted, or belong to a role this user is not in
+  // - a template can outlive both. The form's own validation rejects a format
+  // the sender may not use, so offering one would make the form unsubmittable.
+  $formats = filter_formats();
+  if (empty($defaults['message']['format']) || !isset($formats[$defaults['message']['format']]) || !filter_access($formats[$defaults['message']['format']])) {
+    $defaults['message']['format'] = _views_send_default_format();
+  }
+
+  return $defaults;
+}
+
+/**
  * Multistep form callback for the "configure" step.
  *
  * @TODO: Hide "Sender" (from) if Mandrill is used.
  */
 function views_send_config_form($form, &$form_state, $view, $output) {
-  if (!empty($form_state['configuration'])) {
-    // Values entered in the "config" step.
-    $config = $form_state['configuration'];
-  }
   $display = $view->name . '_' . $view->current_display;
+  $defaults = _views_send_config_form_defaults($display, $form_state);
   $form['display'] = array(
     '#type' => 'value',
     '#value' => $display,
   );
+
+  $template_options = views_send_template_options();
+  $form['template'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Template'),
+    '#description' => t('A template holds the sender, subject and message of a mailing you send regularly, so it does not have to be retyped. Templates are shared by every view on this site - a message written for one view may use tokens another view cannot replace.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => empty($template_options),
+  );
+  if ($template_options) {
+    $form['template']['template_load'] = array(
+      '#type' => 'select',
+      '#title' => t('Load a saved template'),
+      '#options' => array('' => t('- None -')) + $template_options,
+      '#default_value' => '',
+    );
+    $form['template']['load'] = array(
+      '#type' => 'submit',
+      '#value' => t('Load template'),
+      // Without this the required fields below would have to be filled in
+      // before a template could be loaded to fill them in.
+      '#limit_validation_errors' => array(array('template_load')),
+      '#submit' => array('views_send_config_form_load_template_submit'),
+    );
+  }
+  $form['template']['template_label'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Save as template'),
+    '#description' => t('Name the sender, subject and message below to keep them for reuse. Reusing the name of an existing template replaces it. Saved when you press Next, whether or not you go on to send.'),
+    '#maxlength' => 128,
+  );
+
   $form['from'] = array(
     '#type' => 'fieldset',
     '#title' => t('Sender - this will become the reply-to address'),
@@ -254,7 +348,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#type' => 'textfield',
     '#title' => t('Sender\'s name'),
     '#description' => t("Enter the sender's human readable name."),
-    '#default_value' => config_get('views_send.settings', "views_send_$display.from_name"),
+    '#default_value' => $defaults['from_name'],
     '#maxlen' => 255,
   );
   $form['from']['views_send_from_mail'] = array(
@@ -262,7 +356,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#title' => t('Sender\'s email'),
     '#description' => t("Enter the sender's email address. This will become the 'reply-to' address in the email."),
     '#required' => TRUE,
-    '#default_value' => config_get('views_send.settings', "views_send_$display.from_mail"),
+    '#default_value' => $defaults['from_mail'],
     '#maxlen' => 255,
   );
 
@@ -309,7 +403,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#description' => t('Enter the email\'s subject. You can use tokens in the subject.'),
     '#maxlen' => 255,
     '#required' => TRUE,
-    '#default_value' => config_get('views_send.settings', "views_send_$display.subject"),
+    '#default_value' => $defaults['subject'],
   );
   $form['mail']['views_send_message'] = array(
     '#type' => 'text_format',
@@ -319,20 +413,10 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#rows' => 10,
     '#attributes' => array('class' => array('text-full')),
   );
-  if (isset($config['views_send_message']['value'])) {
-    // Returning to this step from the preview: keep what was typed.
-    $form['mail']['views_send_message'] += array(
-      '#format' => $config['views_send_message']['format'],
-      '#default_value' => $config['views_send_message']['value'],
-    );
-  }
-  else {
-    $saved_message = config_get('views_send.settings', "views_send_$display.message");
-    $form['mail']['views_send_message'] += array(
-      '#format' => isset($saved_message['format']) ? $saved_message['format'] : _views_send_default_format(),
-      '#default_value' => isset($saved_message['value']) ? $saved_message['value'] : '',
-    );
-  }
+  $form['mail']['views_send_message'] += array(
+    '#format' => $defaults['message']['format'],
+    '#default_value' => $defaults['message']['value'],
+  );
   $form['mail']['token'] = array(
     '#type' => 'fieldset',
     '#title' => t('Tokens'),
@@ -459,6 +543,12 @@ function views_send_config_form_validate($form, &$form_state) {
   $formats = filter_formats();
   if (!filter_access($formats[$values['views_send_message']['format']])) {
     form_set_error('views_send_message', t('Illegal format selected'));
+  }
+
+  // Check the template name, if the user asked for one to be saved.
+  $label = isset($values['template_label']) ? trim($values['template_label']) : '';
+  if ($label !== '' && _views_send_template_machine_name($label) === '') {
+    form_set_error('template_label', t('A template name must contain at least one letter or number.'));
   }
 
   // Check if sender's email is a valid one.
@@ -653,6 +743,17 @@ function views_send_form_submit($form, &$form_state) {
           }
         }
       }
+      // Save the message as a named template if one was asked for. This
+      // happens before the send is confirmed on purpose: a template is worth
+      // keeping even when the mailing it was written for is then abandoned.
+      $label = trim($form_state['values']['template_label']);
+      if ($label !== '') {
+        $replaced = views_send_template_save($label, $form_state['values'], $display);
+        backdrop_set_message($replaced
+          ? t('Replaced the template %label.', array('%label' => $label))
+          : t('Saved the template %label.', array('%label' => $label)));
+      }
+
       $form_state['configuration'] = $form_state['values'];
       $form_state['configuration']['display'] = $display;
       $form_state['configuration']['views_send_attachments'] = array();
@@ -712,6 +813,165 @@ function views_send_form_back_submit($form, &$form_state) {
       $form_state['rebuild'] = TRUE;
       break;
   }
+}
+
+/**
+ * Submit handler for the "Load template" button on the "configure" step.
+ *
+ * Puts the template into the form state and discards the submitted input, so
+ * that the rebuilt form takes its defaults from the template rather than from
+ * what was on screen a moment ago.
+ */
+function views_send_config_form_load_template_submit($form, &$form_state) {
+  // Note the element names in this fieldset deliberately lack the views_send_
+  // prefix: the "configure" step's submit handler persists every value that
+  // has it, and neither the picker nor the save-as name belongs in the
+  // remembered values for this display.
+  $name = $form_state['values']['template_load'];
+  if (!empty($name) && ($template = views_send_template_load($name))) {
+    $form_state['template'] = $template;
+    backdrop_set_message(t('Loaded the template %label. Nothing has been sent yet.', array('%label' => $template['label'])));
+  }
+  else {
+    $form_state['template'] = NULL;
+  }
+  $form_state['input'] = array();
+  $form_state['rebuild'] = TRUE;
+}
+
+// === Message templates =======================================================
+
+/**
+ * Builds the machine name a template label is stored under.
+ *
+ * @param string $label
+ *   The human readable name typed by the user.
+ *
+ * @return string
+ *   A config-safe name, or an empty string if the label held nothing usable.
+ */
+function _views_send_template_machine_name($label) {
+  $name = preg_replace('/[^a-z0-9_]+/', '_', strtolower($label));
+  return substr(trim($name, '_'), 0, 64);
+}
+
+/**
+ * Loads a single saved template.
+ *
+ * @param string $name
+ *   The template's machine name.
+ *
+ * @return array|false
+ *   The template's values, or FALSE if there is no template of that name.
+ */
+function views_send_template_load($name) {
+  $template = config_get('views_send.template.' . $name);
+  if (empty($template)) {
+    return FALSE;
+  }
+  // A template written by an older version, or edited by hand, may be missing
+  // keys that every caller expects to be present.
+  $template += array(
+    'name' => $name,
+    'label' => $name,
+    'from_name' => '',
+    'from_mail' => '',
+    'subject' => '',
+    'source_display' => '',
+  );
+  if (!isset($template['message']['value'])) {
+    $template['message'] = array('value' => '', 'format' => NULL);
+  }
+  return $template;
+}
+
+/**
+ * Loads every saved template, ordered by label.
+ *
+ * @return array
+ *   Templates keyed by machine name.
+ */
+function views_send_template_load_all() {
+  $templates = array();
+  foreach (config_get_names_with_prefix('views_send.template.') as $config_name) {
+    $name = substr($config_name, strlen('views_send.template.'));
+    if ($template = views_send_template_load($name)) {
+      $templates[$name] = $template;
+    }
+  }
+  uasort($templates, '_views_send_template_sort');
+  return $templates;
+}
+
+/**
+ * Sort callback: orders templates by label, case insensitively.
+ */
+function _views_send_template_sort($a, $b) {
+  return strcasecmp($a['label'], $b['label']);
+}
+
+/**
+ * Lists the saved templates for use as form options.
+ *
+ * @return array
+ *   Template labels keyed by machine name.
+ */
+function views_send_template_options() {
+  $options = array();
+  foreach (views_send_template_load_all() as $name => $template) {
+    $options[$name] = $template['label'];
+  }
+  return $options;
+}
+
+/**
+ * Saves the message part of a send as a named template.
+ *
+ * Only the sender, subject and body are kept. The recipient field mappings are
+ * deliberately left out: templates are offered on every view, and a field name
+ * from one view means nothing in another. Those stay with the per-display
+ * "remember these values" storage, which answers a different question.
+ *
+ * @param string $label
+ *   The human readable name. A template with the same machine name is
+ *   replaced, which is what makes "load, edit, save again" update in place.
+ * @param array $values
+ *   The submitted values of the "configure" step.
+ * @param string $display
+ *   The "<view>_<display>" the template was saved from. Recorded so the
+ *   listing can say where a template's tokens came from.
+ *
+ * @return bool
+ *   TRUE if an existing template was replaced, FALSE if one was created.
+ */
+function views_send_template_save($label, array $values, $display = '') {
+  $name = _views_send_template_machine_name($label);
+  $config = config('views_send.template.' . $name);
+  $existed = !$config->isNew();
+
+  $config->set('name', $name);
+  $config->set('label', $label);
+  $config->set('from_name', isset($values['views_send_from_name']) ? $values['views_send_from_name'] : '');
+  $config->set('from_mail', isset($values['views_send_from_mail']) ? $values['views_send_from_mail'] : '');
+  $config->set('subject', isset($values['views_send_subject']) ? $values['views_send_subject'] : '');
+  $config->set('message', array(
+    'value' => isset($values['views_send_message']['value']) ? $values['views_send_message']['value'] : '',
+    'format' => isset($values['views_send_message']['format']) ? $values['views_send_message']['format'] : NULL,
+  ));
+  $config->set('source_display', $display);
+  $config->save();
+
+  return $existed;
+}
+
+/**
+ * Deletes a saved template.
+ *
+ * @param string $name
+ *   The template's machine name.
+ */
+function views_send_template_delete($name) {
+  config('views_send.template.' . $name)->delete();
 }
 
 /**
@@ -911,6 +1171,28 @@ function views_send_menu() {
     'description' => 'Configure Views Send general options.',
     'page callback' => 'backdrop_get_form',
     'page arguments' => array('views_send_settings'),
+    'access arguments' => array('administer views_send'),
+    'file' => 'views_send.admin.inc',
+  );
+  $items['admin/config/system/views_send/settings'] = array(
+    'title' => 'Settings',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/config/system/views_send/templates'] = array(
+    'type' => MENU_LOCAL_TASK,
+    'title' => 'Templates',
+    'description' => 'Review and delete saved message templates.',
+    'page callback' => 'views_send_templates_page',
+    'access arguments' => array('administer views_send'),
+    'file' => 'views_send.admin.inc',
+  );
+  // 5 is the position of the % in the path, counting from 0.
+  $items['admin/config/system/views_send/templates/%/delete'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => 'Delete template',
+    'page callback' => 'backdrop_get_form',
+    'page arguments' => array('views_send_template_delete_form', 5),
     'access arguments' => array('administer views_send'),
     'file' => 'views_send.admin.inc',
   );
@@ -1419,6 +1701,13 @@ function views_send_config_info() {
   $prefixes['views_send.settings'] = array(
     'label' => t('Views Send settings'),
     'group' => t('Configuration'),
+  );
+  // One config object per saved message template. The name_key is what makes
+  // core delete them all on uninstall.
+  $prefixes['views_send.template'] = array(
+    'name_key' => 'name',
+    'label_key' => 'label',
+    'group' => t('Views Send templates'),
   );
   return $prefixes;
 }
