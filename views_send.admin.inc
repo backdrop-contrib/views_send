@@ -12,6 +12,12 @@
  */
 function views_send_settings() {
   $form = array();
+
+  $form['scope'] = array(
+    '#type' => 'help',
+    '#markup' => t('<strong>Views Send is not designed for mass mailing.</strong> It is meant for sending to a modest list produced by a view - a committee, a working group, a handful of members. Sending newsletters or other bulk email with it is at your own risk. Every hosting provider limits how much mail an account may send, the limits differ between providers and between sending methods, and exceeding them can have your messages dropped, marked as spam, or your account suspended. Check with your provider before sending in bulk, and use a dedicated email marketing service for newsletters.'),
+  );
+
   if (VIEWS_SEND_MIMEMAIL) {
     $form['views_send_attachment_valid_extensions'] = array(
       '#type' => 'textfield',
@@ -86,6 +92,76 @@ function views_send_settings() {
   );
 
   return $form;
+}
+
+/**
+ * Page callback: lists the saved message templates.
+ *
+ * Templates are created from a view's message form, not here - this page
+ * exists so they can be reviewed and removed, which config objects otherwise
+ * make invisible.
+ */
+function views_send_templates_page() {
+  $rows = array();
+  foreach (views_send_template_load_all() as $name => $template) {
+    $rows[] = array(
+      check_plain($template['label']),
+      check_plain($template['subject']),
+      $template['source_display'] ? check_plain($template['source_display']) : t('Unknown'),
+      l(t('Delete'), 'admin/config/system/views_send/templates/' . $name . '/delete'),
+    );
+  }
+
+  $build['help'] = array(
+    '#type' => 'help',
+    '#markup' => t('Templates are saved from the message form of a view, using the "Save as template" field, and are then offered on every view. A message written for one view may contain tokens another view cannot replace, so the view each template was saved from is shown here.'),
+  );
+  $build['templates'] = array(
+    '#theme' => 'table',
+    '#header' => array(t('Name'), t('Subject'), t('Saved from'), t('Operations')),
+    '#rows' => $rows,
+    '#empty' => t('No templates have been saved yet.'),
+  );
+
+  return $build;
+}
+
+/**
+ * Form callback: asks for confirmation before deleting a template.
+ *
+ * @param string $name
+ *   The machine name of the template to delete.
+ */
+function views_send_template_delete_form($form, &$form_state, $name) {
+  $template = views_send_template_load($name);
+  if (!$template) {
+    return MENU_NOT_FOUND;
+  }
+
+  $form['name'] = array(
+    '#type' => 'value',
+    '#value' => $name,
+  );
+  $form['label'] = array(
+    '#type' => 'value',
+    '#value' => $template['label'],
+  );
+
+  return confirm_form($form,
+    t('Delete the template %label?', array('%label' => $template['label'])),
+    'admin/config/system/views_send/templates',
+    t('This cannot be undone. Messages already sent or waiting in the spool are not affected.'),
+    t('Delete')
+  );
+}
+
+/**
+ * Submit handler for views_send_template_delete_form().
+ */
+function views_send_template_delete_form_submit($form, &$form_state) {
+  views_send_template_delete($form_state['values']['name']);
+  backdrop_set_message(t('Deleted the template %label.', array('%label' => $form_state['values']['label'])));
+  $form_state['redirect'] = 'admin/config/system/views_send/templates';
 }
 
 /**

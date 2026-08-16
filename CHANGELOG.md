@@ -5,11 +5,21 @@ All notable changes to Views Send for Backdrop CMS.
 Releases before 1.x-1.2.0 are recorded in the tag list on GitHub; the Drupal
 6/7 history that this module was ported from is in `CHANGELOG.txt`.
 
-## 1.x-1.2.0 (unreleased)
+## 1.x-1.2.0, 2026-08-16
 
 First release since 1.x-1.1.7 (February 2017). It carries both the fixes made
 for this release and the work committed between 2017 and 2025 that was never
 tagged.
+
+### Added
+
+- Saved message templates. The sender, subject and body of a mailing can be
+  saved under a name from the message form and loaded again on any view, rather
+  than only the most recent send being remembered for the one view display.
+  Saving under an existing name replaces it. Templates are listed and can be
+  deleted at Administration > Configuration > System > Views Send > Templates,
+  and each is stored as its own configuration file so it can be deployed
+  between sites.
 
 ### Fixed
 
