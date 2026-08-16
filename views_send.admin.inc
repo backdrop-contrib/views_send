@@ -12,6 +12,12 @@
  */
 function views_send_settings() {
   $form = array();
+
+  $form['scope'] = array(
+    '#type' => 'help',
+    '#markup' => t('<strong>Views Send is not designed for mass mailing.</strong> It is meant for sending to a modest list produced by a view - a committee, a working group, a handful of members. Sending newsletters or other bulk email with it is at your own risk. Every hosting provider limits how much mail an account may send, the limits differ between providers and between sending methods, and exceeding them can have your messages dropped, marked as spam, or your account suspended. Check with your provider before sending in bulk, and use a dedicated email marketing service for newsletters.'),
+  );
+
   if (VIEWS_SEND_MIMEMAIL) {
     $form['views_send_attachment_valid_extensions'] = array(
       '#type' => 'textfield',

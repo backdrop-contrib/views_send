@@ -64,6 +64,28 @@ Permissions are set at Administration > People > Permissions:
   been added to the spool.
 
 
+## Scope and sending limits
+
+**Views Send is not designed for mass mailing.** It is meant for sending to a
+modest list produced by a view — a committee, a working group, a handful of
+members. Sending newsletters or other bulk email with it is at your own risk.
+
+Every hosting provider limits how much mail an account may send. The limits
+differ between providers, and between sending methods on the same provider:
+mail sent by PHP from a web server is often capped far lower than mail sent
+through authenticated SMTP, and a newly created mailbox is frequently
+restricted for its first days. They are usually several separate caps —
+messages per day, total recipients per day, unique recipients per day, and a
+maximum number of addresses on any single message.
+
+Exceeding them can have messages throttled, silently dropped or treated as
+spam, and repeated breaches can put the sending account, or the whole hosting
+account, at risk.
+
+Check with your provider before sending in bulk, and use a dedicated email
+marketing service for newsletters — those handle consent, unsubscribes and
+delivery reputation, which this module does not.
+
 ## Text formats
 
 The message body is composed in whichever text format Mime Mail is configured
