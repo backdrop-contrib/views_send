@@ -5,7 +5,7 @@ All notable changes to Views Send for Backdrop CMS.
 Releases before 1.x-1.2.0 are recorded in the tag list on GitHub; the Drupal
 6/7 history that this module was ported from is in `CHANGELOG.txt`.
 
-## 1.x-1.2.0 (unreleased)
+## 1.x-1.2.0, 2026-08-16
 
 First release since 1.x-1.1.7 (February 2017). It carries both the fixes made
 for this release and the work committed between 2017 and 2025 that was never
