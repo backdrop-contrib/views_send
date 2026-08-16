@@ -121,6 +121,24 @@ function views_send_install() {
 
 
 /**
+ * Implements hook_uninstall().
+ *
+ * The module's own configuration is removed by core, but the per-display mail
+ * keys written by _views_send_mailsystem_set() live in another module's
+ * config object and would otherwise be left behind.
+ */
+function views_send_uninstall() {
+  $mail_config = config('system.mail');
+  foreach (array_keys($mail_config->get()) as $key) {
+    if (strpos($key, 'views_send') === 0) {
+      $mail_config->clear($key);
+    }
+  }
+  $mail_config->save();
+}
+
+
+/**
  * Move views_send settings from variables to config.
  */
 function views_send_update_1000() {

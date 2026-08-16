@@ -49,10 +49,30 @@ switch (true) {
 
 /**
  * Sets the mailsystem to be used for this view.
+ *
+ * Each view display sends under its own mail key so that Mime Mail templates
+ * can be themed per display, and every key has to be registered in system.mail
+ * before it will use anything but the site default. That registration is
+ * written on first use rather than when the view is created, because a view
+ * can be built - or renamed - without this module being involved at all.
+ *
+ * @param string $key
+ *   The mail key for the view display, in the form <view>_<display>.
  */
 function _views_send_mailsystem_set($key) {
-  $mailsystem_key = "views_send_$key";
-  config_set('system.mail', $mailsystem_key, 'MimeMailSystem');
+  $mailsystem_key = 'views_send_' . $key;
+
+  $mailsystem = config_get('views_send.settings', 'views_send_default_mailsystem');
+  if (empty($mailsystem)) {
+    $mailsystem = VIEWS_SEND_MIMEMAIL ? 'MimeMailSystem' : 'DefaultMailSystem';
+  }
+
+  // Called once per message, so only write when the value actually changes.
+  $mail_config = config('system.mail');
+  if ($mail_config->get($mailsystem_key) !== $mailsystem) {
+    $mail_config->set($mailsystem_key, $mailsystem);
+    $mail_config->save();
+  }
 }
 
 /**
@@ -300,16 +320,16 @@ function views_send_config_form($form, &$form_state, $view, $output) {
     '#attributes' => array('class' => array('text-full')),
   );
   if (isset($config['views_send_message']['value'])) {
+    // Returning to this step from the preview: keep what was typed.
     $form['mail']['views_send_message'] += array(
       '#format' => $config['views_send_message']['format'],
-      '#default_value' => config_get('mimemail.settings', 'mimemail_format'),
+      '#default_value' => $config['views_send_message']['value'],
     );
   }
   else {
     $saved_message = config_get('views_send.settings', "views_send_$display.message");
-    $saved_message['value'] = ''; // ignore previous content of body
     $form['mail']['views_send_message'] += array(
-      '#format' => isset($saved_message['format']) ? $saved_message['format'] : filter_fallback_format(),
+      '#format' => isset($saved_message['format']) ? $saved_message['format'] : _views_send_default_format(),
       '#default_value' => isset($saved_message['value']) ? $saved_message['value'] : '',
     );
   }
@@ -322,7 +342,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
   );
   if (!module_exists('token')) {
     $form['mail']['token']['tokens'] = array(
-      '#markup' => theme('views_send_token_help', $fields_name_text)
+      '#markup' => theme('views_send_token_help', array('tokens' => $fields_name_text))
     );
   }
   else {
@@ -333,7 +353,7 @@ function views_send_config_form($form, &$form_state, $view, $output) {
       '#collapsed' => TRUE,
     );
     $form['mail']['token']['views_send']['tokens'] = array(
-      '#markup' => theme('views_send_token_help', $fields_name_text)
+      '#markup' => theme('views_send_token_help', array('tokens' => $fields_name_text))
     );
     $form['mail']['token']['general'] = array(
       '#type' => 'fieldset',
@@ -503,8 +523,8 @@ function views_send_confirm_form($form, &$form_state, $view, $output) {
     backdrop_set_message(
       t("Only plain text is supported in the message. Any HTML will be converted to text. If you want to format the message with HTML, you'll have to install and enable the !mimemail or !mandrill module.",
         array(
-          '!mimemail' => '<a href="http://drupal.org/project/mimemail">Mime Mail</a>',
-          '!mandrill' => '<a href="http://drupal.org/project/mandrill">Mandrill</a>'
+          '!mimemail' => '<a href="https://backdropcms.org/project/mimemail">Mime Mail</a>',
+          '!mandrill' => '<a href="https://backdropcms.org/project/mandrill">Mandrill</a>'
         )
       )
     );
@@ -929,7 +949,7 @@ function views_send_theme($existing, $type, $theme, $path) {
       'variables' => array(),
     ),
     'views_send_token_help' => array(
-      'arguments' => array('tokens' => array()),
+      'variables' => array('tokens' => array()),
     ),
   );
 }
@@ -972,6 +992,40 @@ function views_send_mail($key, &$message, $params) {
 }
 
 // === Helper functions ========================================================
+
+/**
+ * Returns the text format the message body should open in.
+ *
+ * Mime Mail applies its own configured format to every message body it sends,
+ * so offering anything else here invites the author to compose in one format
+ * and have the mail rendered in another. Its setting therefore wins wherever
+ * it is usable, and the site fallback is used otherwise.
+ *
+ * @return string
+ *   A text format machine name.
+ */
+function _views_send_default_format() {
+  $fallback = filter_fallback_format();
+
+  if (!module_exists('mimemail')) {
+    return $fallback;
+  }
+
+  $format = config_get('mimemail.settings', 'mimemail_format');
+  if (empty($format)) {
+    return $fallback;
+  }
+
+  // A format the current user may not use would be rejected by the form's own
+  // validation, and a format deleted since Mime Mail was configured no longer
+  // exists at all.
+  $formats = filter_formats();
+  if (!isset($formats[$format]) || !filter_access($formats[$format])) {
+    return $fallback;
+  }
+
+  return $format;
+}
 
 /**
  * Build header array with priority and receipt confirmation settings.
@@ -1174,8 +1228,8 @@ function views_send_deliver($message) {
     _views_send_mailsystem_set($key);
   }
 
-  // Mime encode the subject before passing to the mail function 
-  // to work around a bug in Drupal's mime_header_encode.
+  // Mime encode the subject before passing to the mail function
+  // to work around a bug in mime_header_encode.
   $mail['subject'] = _views_send_mime_header_encode($message->subject);
 
   $system = backdrop_mail_system('views_send', $key);
@@ -1233,18 +1287,20 @@ function views_send_batch_deliver_finished($success, $results, $operations) {
 /**
  * Theme the replacement tokens.
  *
- * @param $tokens :
- *   Keyed array with tokens as keys and description as values.
+ * @param array $variables
+ *   An associative array containing:
+ *   - tokens: Keyed array with view field names as keys and their labels as
+ *     values.
  *
- * @return
- *   A themed table wirh all tokens.
+ * @return string
+ *   A themed table with all tokens.
  *
  * @todo: Add help for other tokens
  */
-function theme_views_send_token_help($fields) {
+function theme_views_send_token_help($variables) {
   $header = array(t('Token'), t('Replacement value'));
   $rows = array();
-  foreach ($fields as $field => $title) {
+  foreach ($variables['tokens'] as $field => $title) {
     $rows[] = array(
       VIEWS_SEND_TOKEN_PREFIX . sprintf(VIEWS_SEND_TOKEN_PATTERN, $field) . VIEWS_SEND_TOKEN_POSTFIX,
       $title
