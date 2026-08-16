@@ -113,15 +113,15 @@ This project is GPL v2 software. See the LICENSE.txt file in this directory for 
 
 
 ## Current Maintainer for Backdrop
-- [Steve Moorhouse (albanycomputers)] (https://github.com/albanycomputers)
+- [Steve Moorhouse (albanycomputers)](https://github.com/albanycomputers)
 - Seeking additional maintainers and contributors.
 
 ## Credits
 
 ### Sponsorship:
-- [Albany Computer Services] (https://www.albany-computers.co.uk)
-- [Albany Web Design] (https://www.albanywebdesign.co.uk)
-- [Albany Hosting] (https://www.albany-hosting.co.uk)
+- [Albany Computer Services](https://www.albany-computers.co.uk)
+- [Albany Web Design](https://www.albanywebdesign.co.uk)
+- [Albany Hosting](https://www.albany-hosting.co.uk)
 
 ### Past Maintainers
 
